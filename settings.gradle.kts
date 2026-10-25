@@ -17,7 +17,10 @@ dependencyResolutionManagement {
 }
 
 // Uses the app repo's shared module (API models) directly. With both repos cloned side by side,
-// the kr.ac.catholic.cukmoa:shared dependency is linked to the ../cuk-moa-kmp/shared project,
+// the kr.ac.catholic.cukmoa:shared dependency is linked to the app repo's shared project,
 // so if the app and server API shapes diverge, the server fails to compile.
-val appRepo = file(providers.gradleProperty("appRepo").getOrElse("../cuk-moa-kmp"))
+// Looks for the app repo (cuk-moa-kmp) in the sibling folder
+val appRepo = providers.gradleProperty("appRepo").orNull?.let(::file)
+    ?: file("../cuk-moa-kmp")
 if (appRepo.resolve("shared").exists()) includeBuild(appRepo)
+gradle.extra["appRepo"] = appRepo.absolutePath

@@ -1,6 +1,6 @@
 # 가대모아 (CUK Moa) — Server
 
-API server and school announcement collector for the [가대모아 app](../cuk-moa-kmp). Kotlin + Ktor 3, SQLite.
+API server and school information collector for the [가대모아 app](https://github.com/Sparxikle/cuk-moa-kmp). Kotlin + Ktor 3, SQLite.
 
 - **Automatically collects this year's announcements** from school notices, LMS, events, external contests and 14 boards of the 5 departments in the College of AI, Electronics & Information Convergence (18 sources in total).
   Full scrape on startup, new posts only every 30 minutes, and a full rescrape once a day (refreshes view counts and pinned status).
@@ -13,11 +13,12 @@ API server and school announcement collector for the [가대모아 app](../cuk-m
 The API models (`shared`) and the sample catalog live in the app repo. Clone both repos side by side.
 
 ```sh
-git clone <app-repo> cuk-moa-kmp
-git clone <server-repo> cuk-moa-ktor
+git clone https://github.com/Sparxikle/cuk-moa-kmp.git
+git clone https://github.com/Sparxikle/cuk-moa-ktor.git
+cd cuk-moa-ktor && ./gradlew test
 ```
 
-If it is elsewhere, add `-PappRepo=/path/to/cuk-moa-kmp`. The app and server compile against the same model code, so an API mismatch fails the server build.
+The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, add `-PappRepo=/path/to/app`. The app and server compile against the same model code, so an API mismatch fails the server build.
 
 ## Running
 

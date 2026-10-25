@@ -14,7 +14,7 @@ application {
 }
 
 // The sample catalog source is in the app repo's shared/data. It's put on the server classpath as is.
-val appRepo = file(providers.gradleProperty("appRepo").getOrElse("../cuk-moa-kmp"))
+val appRepo = file(gradle.extra["appRepo"] as String) // App repo found in settings.gradle.kts
 sourceSets.main { resources.srcDir(appRepo.resolve("shared/data")) }
 
 dependencies {
