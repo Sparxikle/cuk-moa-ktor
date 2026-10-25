@@ -219,3 +219,66 @@ fun mergeFaculty(lists: List<List<kr.ac.catholic.cukmoa.model.FacultyMember>>): 
             role = same.mapNotNull { it.role }.distinct().joinToString(", ").ifEmpty { null },
         )
     }
+
+private val SEMESTER_RE = Regex("""([1-4])\s*-\s*([12])""")
+
+/**
+ * Department major roadmap (course/roadmap.do).
+ * The table merges cells with rowspan/colspan, so cells are spread onto a grid to find column → semester and row → track.
+ * If there's no table, only an image, returns just the image address.
+ */
+fun parseMajorRoadmap(html: String, major: String, department: String, url: String): kr.ac.catholic.cukmoa.model.MajorRoadmap {
+    val doc = Jsoup.parse(html, url)
+    val content = doc.selectFirst("#cms-content") ?: doc
+    val legend = content.select("ul.subject-ul > li").mapNotNull { li ->
+        val key = li.selectFirst("span.subject")?.text()?.trim() ?: return@mapNotNull null
+        key to li.ownText().trim()
+    }.toMap()
+    val base = kr.ac.catholic.cukmoa.model.MajorRoadmap(major = major, department = department, url = url, legend = legend)
+    val table = content.selectFirst("table.cuk-table")
+        ?: return base.copy(imageUrl = content.selectFirst("img[src]")?.absUrl("src")?.ifEmpty { null })
+
+    // Header row: column number → semester (the first column is the track name)
+    val semesterByCol = mutableMapOf<Int, kr.ac.catholic.cukmoa.model.SemesterKey>()
+    var col = 0
+    for (th in table.select("thead tr").first()?.children().orEmpty()) {
+        val span = th.attr("colspan").toIntOrNull() ?: 1
+        SEMESTER_RE.find(th.text())?.let { m ->
+            val key = kr.ac.catholic.cukmoa.model.SemesterKey.of(m.groupValues[1].toInt(), m.groupValues[2].toInt())
+            repeat(span) { semesterByCol[col + it] = key }
+        }
+        col += span
+    }
+
+    val occupied = mutableSetOf<Pair<Int, Int>>()
+    val trackByRow = mutableMapOf<Int, String>()
+    val entries = mutableListOf<kr.ac.catholic.cukmoa.model.MajorRoadmapEntry>()
+    table.select("tbody > tr").forEachIndexed { r, tr ->
+        var c = 0
+        for (cell in tr.children()) {
+            while ((r to c) in occupied) c++
+            val rs = cell.attr("rowspan").toIntOrNull() ?: 1
+            val cs = cell.attr("colspan").toIntOrNull() ?: 1
+            for (dr in 0 until rs) for (dc in 0 until cs) occupied += (r + dr) to (c + dc)
+            if (cell.tagName() == "th") {
+                val name = cell.text().replace(Regex("\\s+"), " ").trim()
+                for (dr in 0 until rs) trackByRow[r + dr] = name
+            } else {
+                for (li in cell.select("li")) {
+                    val marks = li.select("span.subject").map { s -> s.text().trim().let { legend[it] ?: it } }
+                    val copy = li.clone()
+                    copy.select("span.subject").remove()
+                    copy.select("br").forEach { it.replaceWith(org.jsoup.nodes.TextNode("")) } // Line breaks are joined
+                    val name = copy.text().replace(Regex("\\s+"), " ").trim()
+                    if (name.isEmpty()) continue
+                    for (dc in 0 until cs) {
+                        val semester = semesterByCol[c + dc] ?: continue
+                        entries += kr.ac.catholic.cukmoa.model.MajorRoadmapEntry(trackByRow[r].orEmpty(), semester, name, marks)
+                    }
+                }
+            }
+            c += cs
+        }
+    }
+    return base.copy(entries = entries.distinct())
+}

@@ -36,6 +36,7 @@ import kr.ac.catholic.cukmoa.model.Catalog
 import kr.ac.catholic.cukmoa.model.DataSource
 import kr.ac.catholic.cukmoa.model.DepartmentList
 import kr.ac.catholic.cukmoa.model.FacultyList
+import kr.ac.catholic.cukmoa.model.MajorRoadmapList
 import kr.ac.catholic.cukmoa.model.ErrorBody
 import kr.ac.catholic.cukmoa.model.ErrorCodes
 import kr.ac.catholic.cukmoa.model.ErrorDetail
@@ -129,6 +130,21 @@ fun Application.module(db: Database, catalog: Catalog, departments: DepartmentSe
         }
 
         get("/api/v1/departments") { call.respond(departments.current()) }
+
+        get("/api/v1/roadmaps") {
+            val majors = call.request.queryParameters["major"]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+            call.respond(
+                MajorRoadmapList(
+                    source = DataSource(
+                        label = "AI전자정보융합대학 학과 홈페이지 전공로드맵",
+                        asOf = db.scrapeRuns().filter { it.boardKey.startsWith("roadmap/") }.mapNotNull { it.lastOk }.maxOrNull()?.take(10)
+                            ?: java.time.LocalDate.now().toString(),
+                        isSample = false,
+                    ),
+                    items = db.roadmaps(majors),
+                ),
+            )
+        }
 
         get("/api/v1/professors") {
             val majors = call.request.queryParameters["major"]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()

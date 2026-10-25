@@ -54,7 +54,7 @@ class Database(private val path: String) {
     /** Remembers how many migrations were applied via user_version. Added files are applied on the next start. */
     private fun migrate(c: Connection) {
         val applied = c.createStatement().use { s -> s.executeQuery("PRAGMA user_version").use { it.getInt(1) } }
-        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql")
+        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql", "db/0004_roadmaps.sql")
         files.drop(applied).forEachIndexed { i, name ->
             val sql = javaClass.classLoader.getResource(name)!!.readText()
             c.autoCommit = false
@@ -213,6 +213,32 @@ class Database(private val path: String) {
             }
         }.filter { majors.isEmpty() || it.majors.any { m -> m in majors } }
             .sortedWith(compareBy({ it.role == null }, { it.name }))
+    }
+
+    // ---- Official department roadmaps ----
+
+    fun replaceRoadmap(roadmap: kr.ac.catholic.cukmoa.model.MajorRoadmap) = use { c ->
+        c.prepareStatement(
+            """INSERT INTO major_roadmaps (major, data, updated_at) VALUES (?, ?, ?)
+               ON CONFLICT (major) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at""",
+        ).use { st ->
+            st.setString(1, roadmap.major)
+            st.setString(2, kr.ac.catholic.cukmoa.model.ApiJson.encodeToString(kr.ac.catholic.cukmoa.model.MajorRoadmap.serializer(), roadmap))
+            st.setString(3, nowUtc())
+            st.executeUpdate()
+        }
+    }
+
+    /** All if majors is empty (in department board order) */
+    fun roadmaps(majors: List<String>): List<kr.ac.catholic.cukmoa.model.MajorRoadmap> = use { c ->
+        c.createStatement().use { st ->
+            st.executeQuery("SELECT data FROM major_roadmaps").use { rs ->
+                buildList {
+                    while (rs.next()) add(kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.MajorRoadmap.serializer(), rs.getString(1)))
+                }
+            }
+        }.filter { majors.isEmpty() || it.major in majors }
+            .sortedBy { kr.ac.catholic.cukmoa.model.Majors.keys.indexOf(it.major) }
     }
 
     // ---- Academic calendar ----

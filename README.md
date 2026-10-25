@@ -5,7 +5,7 @@ API server and school announcement collector for the [가대모아 app](../cuk-m
 - **Automatically collects this year's announcements** from school notices, LMS, events, external contests and 14 boards of the 5 departments in the College of AI, Electronics & Information Convergence (18 sources in total).
   Full scrape on startup, new posts only every 30 minutes, and a full rescrape once a day (refreshes view counts and pinned status).
 - Provides the school's **academic calendar** (per academic year) and the **full list of school departments** from the Public Data Portal (data.go.kr).
-- Collects **professor profiles** from the faculty pages of the same 5 departments.
+- Collects **professor profiles** and **official major roadmaps** from the websites of the same 5 departments.
 - Provides the **catalog** of courses, career tracks, roadmaps, professors and graduation requirements (currently the sample catalog from the app repo).
 
 ## The app repo is required
@@ -57,6 +57,7 @@ Refreshing the department snapshot (saved in the app repo; commit it to update t
 | `GET /api/v1/departments` | All school departments (by college, excluding discontinued and admission-only units) |
 | `GET /api/v1/calendar?campus=성심` | School academic calendar (성심 · 성의 · 성신 campuses) |
 | `GET /api/v1/professors` | Professor profiles from department websites (`major`, e.g. `?major=ai,csie`; department chairs first, then by name) |
+| `GET /api/v1/roadmaps` | Official department major roadmaps (`major`) |
 
 For announcements, `major` applies only to department posts (`source=dept`). Example: `?source=dept,main&major=ai,csie` = both majors' boards + school notices.
 

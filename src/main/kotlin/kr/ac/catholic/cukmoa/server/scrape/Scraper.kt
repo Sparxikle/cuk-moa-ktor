@@ -127,6 +127,12 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
             result.onSuccess { log.info("faculty members={}", it) }.onFailure { log.warn("faculty failed: {}", it.message) }
             db.recordRun("faculty", result)
         }
+        // Official department roadmaps also only during full collection. Recorded per department, so one failure doesn't stop the rest from updating.
+        if (mode == Mode.Full) for ((major, department) in kr.ac.catholic.cukmoa.model.Majors) {
+            val result = runCatching { scrapeRoadmap(major, department) }
+            result.onSuccess { log.info("roadmap {} entries={}", major, it) }.onFailure { log.warn("roadmap {} failed: {}", major, it.message) }
+            db.recordRun("roadmap/$major", result)
+        }
         // The academic calendar rarely changes, so it's read only during full collection. In January–February the previous academic year is needed too.
         if (mode == Mode.Full) for (academicYear in listOf(year - 1, year)) {
             val result = runCatching { scrapeCalendar(academicYear) }
@@ -150,6 +156,19 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
         val merged = mergeFaculty(lists)
         db.replaceFaculty(merged)
         return merged.size
+    }
+
+    private suspend fun scrapeRoadmap(major: String, department: String): Int {
+        delay(requestDelay.toMillis())
+        val url = "https://$major.catholic.ac.kr/$major/course/roadmap.do"
+        val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build()
+        val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
+        check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
+        val roadmap = parseMajorRoadmap(res.body(), major, department, url)
+        // Neither a table nor an image means the page structure changed → don't delete the existing roadmap
+        check(roadmap.entries.isNotEmpty() || roadmap.imageUrl != null) { "로드맵 표·그림을 찾지 못함" }
+        db.replaceRoadmap(roadmap)
+        return roadmap.entries.size
     }
 
     private suspend fun scrapeCalendar(academicYear: Int): Int {
