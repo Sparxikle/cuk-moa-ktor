@@ -1,0 +1,19 @@
+# Build output
+build/
+.gradle/
+.kotlin/
+target/
+local.properties
+*.iml
+.idea/
+
+# Runtime data
+# Server runtime data (SQLite). shared/data (sample catalog) is kept in the repo.
+/data/
+/server/data/
+*.db
+*.db-wal
+*.db-shm
+
+# OS
+.DS_Store
