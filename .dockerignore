@@ -4,3 +4,4 @@ build/kotlin
 build/install
 data
 src
+.env

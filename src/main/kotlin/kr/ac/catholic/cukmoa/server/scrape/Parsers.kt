@@ -134,3 +134,45 @@ fun parseDept(html: String): List<RawRow> {
         )
     }
 }
+
+private val DAY_RE = Regex("""^(\d{1,2})""")
+private val MONTH_DAY_RE = Regex("""^(\d{1,2})\.(\d{1,2})""")
+private val MONTH_RE = Regex("""(?:(\d{4})년)?\s*(\d{1,2})월""")
+
+/** One academic calendar row */
+data class CalendarRow(val title: String, val start: String, val end: String?, val campuses: List<String>)
+
+/**
+ * School academic calendar (calendar2024_list.do, selectedYear=academic year).
+ * March through February of the next year. End dates appear as "13 (금)" within the same month, "07.13(월)" for another month.
+ */
+fun parseCalendar(html: String, academicYear: Int): List<CalendarRow> {
+    val box = Jsoup.parse(html).selectFirst("div.b-cal-list-box") ?: return emptyList()
+    val out = mutableListOf<CalendarRow>()
+    for (monthBlock in box.children()) {
+        // "3월", or "2027년 1월" once it rolls into the next year
+        val head = MONTH_RE.find(monthBlock.selectFirst("> p")?.text().orEmpty()) ?: continue
+        val month = head.groupValues[2].toInt()
+        val year = head.groupValues[1].toIntOrNull() ?: if (month < 3) academicYear + 1 else academicYear
+        for (entry in monthBlock.select("> div > div")) {
+            val dateP = entry.selectFirst("> p") ?: continue
+            val parts = dateP.text().split("~").map { it.trim() }
+            val startDay = DAY_RE.find(parts[0])?.groupValues?.get(1)?.toInt() ?: continue
+            val start = iso(year, month, startDay)
+            val end = parts.getOrNull(1)?.let { e ->
+                MONTH_DAY_RE.find(e)?.let { m ->
+                    val em = m.groupValues[1].toInt()
+                    iso(if (em < month) year + 1 else year, em, m.groupValues[2].toInt())
+                } ?: DAY_RE.find(e)?.groupValues?.get(1)?.toInt()?.let { iso(year, month, it) }
+            }
+            for (li in entry.select("ul > li")) {
+                val campuses = li.select("div.b-cal-list-cate span").map { it.text().trim() }
+                val title = li.ownText().trim().ifEmpty { li.clean() }
+                if (title.isNotEmpty()) out += CalendarRow(title, start, end?.takeIf { it != start }, campuses)
+            }
+        }
+    }
+    return out
+}
+
+private fun iso(y: Int, m: Int, d: Int) = "%04d-%02d-%02d".format(y, m, d)

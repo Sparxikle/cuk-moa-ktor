@@ -41,7 +41,7 @@ class ApiTest {
             ),
         )
         testApplication {
-            application { module(db, loadCatalog(null)) }
+            application { module(db, loadCatalog(null), DepartmentService(apiKey = null)) }
             block(db)
         }
     }
@@ -86,6 +86,9 @@ class ApiTest {
         assertEquals("2026-10-21", page("?pinnedFirst=false").items.first().date)
 
         assertEquals(3, page("?source=dept&major=csie").total)
+        // The department filter applies only to department posts: my department + school notices
+        assertEquals(4, page("?source=dept,main&major=csie").total)
+        assertEquals(1, page("?source=dept,main&major=ai").total)
         assertEquals(1, page("?source=main").total)
         assertEquals(4, page("?source=dept,main").total)
         assertEquals(1, page("?q=공모전").total) // 3+ characters: FTS
@@ -93,7 +96,30 @@ class ApiTest {
         assertEquals(0, page("?q=없는단어").total)
         assertEquals(0, page("?since=2099-01-01").total)
         assertEquals(2, page("?limit=2").items.size)
-        assertEquals(0, page("?major=ai')%20OR%201=1--").total) // Input is only ever bound as a parameter
+        assertEquals(0, page("?source=dept&major=ai')%20OR%201=1--").total) // Input is only ever bound as a parameter
+    }
+
+    @Test
+    fun `departments fall back to the bundled snapshot without an API key`() = withApi {
+        val list = json().get("/api/v1/departments").body<kr.ac.catholic.cukmoa.model.DepartmentList>()
+        assertTrue(list.items.size > 50)
+        assertTrue(list.items.any { it.board == "csie" })
+    }
+
+    @Test
+    fun `calendar filters by campus`() = withApi { db ->
+        db.replaceCalendar(
+            2026,
+            listOf(
+                kr.ac.catholic.cukmoa.server.scrape.CalendarRow("중간고사", "2026-10-20", "2026-10-26", listOf("성심")),
+                kr.ac.catholic.cukmoa.server.scrape.CalendarRow("의대 일정", "2026-10-21", null, listOf("성의")),
+            ),
+        )
+        val client = json()
+        val cal = client.get("/api/v1/calendar").body<kr.ac.catholic.cukmoa.model.CalendarResponse>()
+        assertEquals(listOf("중간고사"), cal.events.map { it.title })
+        assertEquals(kr.ac.catholic.cukmoa.model.EventKind.Exam, cal.events.single().kind)
+        assertEquals(HttpStatusCode.BadRequest, client.get("/api/v1/calendar?campus=x").status)
     }
 
     @Test

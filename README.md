@@ -4,6 +4,7 @@ API server and school announcement collector for the [가대모아 app](../cuk-m
 
 - **Automatically collects this year's announcements** from school notices, LMS, events, external contests and 14 boards of the 5 departments in the College of AI, Electronics & Information Convergence (18 sources in total).
   Full scrape on startup, new posts only every 30 minutes, and a full rescrape once a day (refreshes view counts and pinned status).
+- Provides the school's **academic calendar** (per academic year) and the **full list of school departments** from the Public Data Portal (data.go.kr).
 - Provides the **catalog** of courses, career tracks, roadmaps, professors and graduation requirements (currently the sample catalog from the app repo).
 
 ## The app repo is required
@@ -32,6 +33,15 @@ If it is elsewhere, add `-PappRepo=/path/to/cuk-moa-kmp`. The app and server com
 | `SCRAPE_INTERVAL_MIN` | `30` | Interval for collecting new posts |
 | `SCRAPE_ENABLED` | `true` | `false` = API only |
 | `CATALOG_PATH` | none | Real catalog JSON. Sample if unset. The server won't start if references are broken |
+| `DATA_GO_API_KEY` | none | Public Data Portal "University Department Information" API key. Without it, the department list comes from the snapshot in the app repo |
+
+Settings are read from environment variables first, then from `.env` in the server folder. Copy `.env.example` to `.env`. **`.env` is not tracked by git** (never commit the key).
+
+Refreshing the department snapshot (saved in the app repo; commit it to update the app bundle):
+
+```sh
+./gradlew run --args="--export-departments ../cuk-moa-kmp/shared/data/departments.json"
+```
 
 ## API
 
@@ -43,6 +53,10 @@ If it is elsewhere, add `-PappRepo=/path/to/cuk-moa-kmp`. The app and server com
 | `GET /api/v1/announcements` | Announcement list (`source`, `major`, `category`, `board`, `q`, `since`, `pinnedFirst`, `limit`, `offset`) |
 | `GET /api/v1/announcements/{id}` | Single announcement |
 | `GET /api/v1/announcements/meta` | Department names, announcement count per board, scrape status per board |
+| `GET /api/v1/departments` | All school departments (by college, excluding discontinued and admission-only units) |
+| `GET /api/v1/calendar?campus=성심` | School academic calendar (성심 · 성의 · 성신 campuses) |
+
+`major` applies only to department posts (`source=dept`). Example: `?source=dept,main&major=ai,csie` = both majors' boards + school notices.
 
 Errors: `{"error": {"code": "COURSE_NOT_FOUND", "message": "과목을 찾을 수 없습니다."}}` (messages are in Korean and shown to users as is)
 
@@ -74,7 +88,7 @@ SQLite needs a persistent disk, so use EC2 (or a Lightsail instance). Since it's
 ```sh
 ./gradlew fatJar
 docker build -t cuk-moa-ktor .
-docker run -d --name cuk-moa --restart unless-stopped \
+docker run -d --name cuk-moa --restart unless-stopped --env-file .env \
   -p 80:8080 -v /srv/cuk-moa:/data cuk-moa-ktor
 curl http://<server address>/health
 ```

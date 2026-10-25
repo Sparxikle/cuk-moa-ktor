@@ -17,3 +17,8 @@ local.properties
 
 # OS
 .DS_Store
+
+# Secrets (API keys). On the server, provide them via environment variables or this file. Never commit it.
+.env
+.env.*
+!.env.example

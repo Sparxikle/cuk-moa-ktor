@@ -31,7 +31,10 @@ import kr.ac.catholic.cukmoa.model.AnnouncementQuery
 import kr.ac.catholic.cukmoa.model.AnnouncementSource
 import kr.ac.catholic.cukmoa.model.AnnouncementsHealth
 import kr.ac.catholic.cukmoa.model.ApiJson
+import kr.ac.catholic.cukmoa.model.CalendarResponse
 import kr.ac.catholic.cukmoa.model.Catalog
+import kr.ac.catholic.cukmoa.model.DataSource
+import kr.ac.catholic.cukmoa.model.DepartmentList
 import kr.ac.catholic.cukmoa.model.ErrorBody
 import kr.ac.catholic.cukmoa.model.ErrorCodes
 import kr.ac.catholic.cukmoa.model.ErrorDetail
@@ -51,7 +54,7 @@ private const val DEFAULT_LIMIT = 20
 private const val MAX_LIMIT = 100
 
 /** HTTP config and routes. Tests call the same function inside testApplication. */
-fun Application.module(db: Database, catalog: Catalog) {
+fun Application.module(db: Database, catalog: Catalog, departments: DepartmentService) {
     install(ContentNegotiation) { json(ApiJson) }
     install(Compression)
     install(CallLogging)
@@ -124,6 +127,26 @@ fun Application.module(db: Database, catalog: Catalog) {
             )
         }
 
+        get("/api/v1/departments") { call.respond(departments.current()) }
+
+        get("/api/v1/calendar") {
+            val campus = call.request.queryParameters["campus"] ?: "성심"
+            if (campus !in setOf("성심", "성의", "성신")) throw BadRequest("campus는 성심·성의·성신 중 하나입니다.")
+            call.respond(
+                CalendarResponse(
+                    source = DataSource(
+                        label = "가톨릭대학교 학사일정",
+                        asOf = db.scrapeRuns().filter { it.boardKey.startsWith("calendar/") }.mapNotNull { it.lastOk }.maxOrNull()?.take(10)
+                            ?: java.time.LocalDate.now().toString(),
+                        isSample = false,
+                        url = "https://www.catholic.ac.kr/ko/support/calendar2024_list.do",
+                    ),
+                    campus = campus,
+                    events = db.calendar(campus),
+                ),
+            )
+        }
+
         get("/api/v1/announcements/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequest("공지 ID는 숫자입니다.")
             val item = db.get(id) ?: return@get call.error(HttpStatusCode.NotFound, ErrorCodes.ANNOUNCEMENT_NOT_FOUND, "공지를 찾을 수 없습니다.")
@@ -144,7 +167,10 @@ internal fun parseSince(s: String): String? = runCatching {
     java.time.LocalDate.parse(s).toString() + "T00:00:00Z"
 }.getOrNull()
 
-private fun env(name: String, default: String) = System.getenv(name) ?: default
+// Config: environment variables → .env in the server folder → defaults. Secrets (API keys) only via .env or environment variables.
+private val dotEnv by lazy { loadDotEnv() }
+private fun env(name: String): String? = System.getenv(name) ?: dotEnv[name]
+private fun env(name: String, default: String) = env(name) ?: default
 
 fun loadCatalog(path: String?): Catalog {
     val text = path?.let { File(it).readText() }
@@ -156,6 +182,15 @@ fun main(args: Array<String>) {
     val db = Database(env("DATABASE_PATH", "data/announcements.db"))
     val catalog = loadCatalog(System.getenv("CATALOG_PATH"))
     val scraper = Scraper(db)
+    val departments = DepartmentService(env("DATA_GO_API_KEY"))
+
+    // `--export-departments <file>`: fetch the department list from the API and save it as the snapshot in the app repo
+    args.indexOf("--export-departments").takeIf { it >= 0 }?.let { i ->
+        val list = departments.fetch()
+        File(args[i + 1]).writeText(kotlinx.serialization.json.Json(ApiJson) { prettyPrint = true }.encodeToString(DepartmentList.serializer(), list) + "\n")
+        println("wrote ${list.items.size} departments to ${args[i + 1]}")
+        return
+    }
 
     // `--once [--incremental]`: collect once and exit (for manual refresh and checks)
     if ("--once" in args) {
@@ -168,7 +203,7 @@ fun main(args: Array<String>) {
     val scrapeEnabled = env("SCRAPE_ENABLED", "true") != "false"
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") {
-        module(db, catalog)
+        module(db, catalog, departments)
         if (scrapeEnabled) launch {
             // Full collection at startup, then new posts only every interval, and a full collection again once a day.
             var lastFull: TimeSource.Monotonic.ValueTimeMark? = null

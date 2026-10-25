@@ -116,7 +116,26 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
                 .onFailure { log.warn("scrape failed {}: {}", b.key, it.message) }
             db.recordRun(b.key, result)
         }
+        // The academic calendar rarely changes, so it's read only during full collection. In January–February the previous academic year is needed too.
+        if (mode == Mode.Full) for (academicYear in listOf(year - 1, year)) {
+            val result = runCatching { scrapeCalendar(academicYear) }
+            result.onSuccess { log.info("calendar {} events={}", academicYear, it) }
+                .onFailure { log.warn("calendar {} failed: {}", academicYear, it.message) }
+            db.recordRun("calendar/$academicYear", result)
+        }
         log.info("scrape run finished mode={} total={}", mode, total)
+    }
+
+    private suspend fun scrapeCalendar(academicYear: Int): Int {
+        delay(requestDelay.toMillis())
+        val req = HttpRequest.newBuilder(URI("$WWW/ko/support/calendar2024_list.do?mode=list&siteId=ko&selectedYear=$academicYear"))
+            .timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build()
+        val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
+        check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
+        val rows = parseCalendar(res.body(), academicYear)
+        // Don't wipe existing events with an empty result (not published yet, or the page structure changed)
+        if (rows.isNotEmpty()) db.replaceCalendar(academicYear, rows)
+        return rows.size
     }
 
     private suspend fun fetch(b: Board, page: Int): String {

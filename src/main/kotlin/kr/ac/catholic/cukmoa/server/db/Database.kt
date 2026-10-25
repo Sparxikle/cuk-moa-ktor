@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit
 import kr.ac.catholic.cukmoa.model.Announcement
 import kr.ac.catholic.cukmoa.model.AnnouncementQuery
 import kr.ac.catholic.cukmoa.model.BoardCount
+import kr.ac.catholic.cukmoa.model.EventKind
 import kr.ac.catholic.cukmoa.model.ScrapeRun
 
 fun nowUtc(): String = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString() // 2026-10-25T05:46:14Z
@@ -53,7 +54,7 @@ class Database(private val path: String) {
     /** Remembers how many migrations were applied via user_version. Added files are applied on the next start. */
     private fun migrate(c: Connection) {
         val applied = c.createStatement().use { s -> s.executeQuery("PRAGMA user_version").use { it.getInt(1) } }
-        val files = listOf("db/0001_init.sql")
+        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql")
         files.drop(applied).forEachIndexed { i, name ->
             val sql = javaClass.classLoader.getResource(name)!!.readText()
             c.autoCommit = false
@@ -125,7 +126,10 @@ class Database(private val path: String) {
     fun list(q: AnnouncementQuery): Pair<List<Announcement>, Long> = use { c ->
         val where = Where()
         where.inList("source", q.source)
-        where.inList("major", q.major)
+        // The department filter applies only to department board posts → "my department + school notices" can be selected at once.
+        if (q.major.isNotEmpty()) {
+            where.add("(source <> 'dept' OR major IN (${q.major.joinToString { "?" }}))", *q.major.toTypedArray())
+        }
         where.inList("category", q.category)
         where.inList("board", q.board)
         q.q?.split(Regex("\\s+"))?.filter { it.isNotBlank() }?.forEach { term ->
@@ -181,6 +185,52 @@ class Database(private val path: String) {
 
     fun lastScrape(): String? = scrapeRuns().mapNotNull { it.lastOk }.maxOrNull()
 
+    // ---- Academic calendar ----
+
+    /** Replaces one academic year's events wholesale (follows along when the school edits or deletes events). */
+    fun replaceCalendar(academicYear: Int, rows: List<kr.ac.catholic.cukmoa.server.scrape.CalendarRow>) = use { c ->
+        c.autoCommit = false
+        c.prepareStatement("DELETE FROM calendar_events WHERE academic_year = ?").use { it.setInt(1, academicYear); it.executeUpdate() }
+        c.prepareStatement(
+            "INSERT INTO calendar_events (academic_year, title, start_date, end_date, campuses) VALUES (?, ?, ?, ?, ?)",
+        ).use { st ->
+            for (r in rows) {
+                st.setInt(1, academicYear); st.setString(2, r.title); st.setString(3, r.start)
+                st.setString(4, r.end); st.setString(5, r.campuses.joinToString(","))
+                st.addBatch()
+            }
+            st.executeBatch()
+        }
+        c.commit()
+    }
+
+    /** Campus events (including events without a campus label), by date */
+    fun calendar(campus: String): List<kr.ac.catholic.cukmoa.model.AcademicEvent> = use { c ->
+        c.prepareStatement(
+            """SELECT id, title, start_date, end_date FROM calendar_events
+               WHERE campuses = '' OR (',' || campuses || ',') LIKE ?
+               ORDER BY start_date, id""",
+        ).use { st ->
+            st.setString(1, "%,$campus,%")
+            st.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) {
+                        val title = rs.getString(2)
+                        add(
+                            kr.ac.catholic.cukmoa.model.AcademicEvent(
+                                id = "cal-${rs.getLong(1)}",
+                                title = title,
+                                start = rs.getString(3),
+                                end = rs.getString(4),
+                                kind = eventKind(title),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     private companion object {
         const val COLUMNS = "id, source, board, NULLIF(major, '') AS major, category, title, date, author, views, link, image, pinned, first_seen, updated_at"
 
@@ -220,6 +270,16 @@ class Database(private val path: String) {
         }
     }
 }
+
+/** Guesses the kind from the event title (only used by the app to pick an icon and color). */
+internal fun eventKind(title: String): EventKind =
+    when {
+        listOf("시험", "고사").any { it in title } -> EventKind.Exam
+        listOf("신청", "등록", "변경", "철회", "담기").any { it in title } -> EventKind.Registration
+        listOf("휴업", "공휴", "방학", "휴일", "개교기념").any { it in title } -> EventKind.Holiday
+        listOf("마감", "제출", "입력", "기한").any { it in title } -> EventKind.Deadline
+        else -> EventKind.Event
+    }
 
 /** Builds a WHERE clause along with bind values. User input only ever goes in through ?. */
 private class Where {
