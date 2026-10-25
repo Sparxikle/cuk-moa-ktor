@@ -54,7 +54,7 @@ class Database(private val path: String) {
     /** Remembers how many migrations were applied via user_version. Added files are applied on the next start. */
     private fun migrate(c: Connection) {
         val applied = c.createStatement().use { s -> s.executeQuery("PRAGMA user_version").use { it.getInt(1) } }
-        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql")
+        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql")
         files.drop(applied).forEachIndexed { i, name ->
             val sql = javaClass.classLoader.getResource(name)!!.readText()
             c.autoCommit = false
@@ -184,6 +184,36 @@ class Database(private val path: String) {
     }
 
     fun lastScrape(): String? = scrapeRuns().mapNotNull { it.lastOk }.maxOrNull()
+
+    // ---- Professors ----
+
+    fun replaceFaculty(items: List<kr.ac.catholic.cukmoa.model.FacultyMember>) = use { c ->
+        val now = nowUtc()
+        c.autoCommit = false
+        c.createStatement().use { it.executeUpdate("DELETE FROM faculty") }
+        c.prepareStatement("INSERT INTO faculty (id, data, updated_at) VALUES (?, ?, ?)").use { st ->
+            for (m in items) {
+                st.setString(1, m.id)
+                st.setString(2, kr.ac.catholic.cukmoa.model.ApiJson.encodeToString(kr.ac.catholic.cukmoa.model.FacultyMember.serializer(), m))
+                st.setString(3, now)
+                st.addBatch()
+            }
+            st.executeBatch()
+        }
+        c.commit()
+    }
+
+    /** All if majors is empty. Department chairs first, then by name. */
+    fun faculty(majors: List<String>): List<kr.ac.catholic.cukmoa.model.FacultyMember> = use { c ->
+        c.createStatement().use { st ->
+            st.executeQuery("SELECT data FROM faculty").use { rs ->
+                buildList {
+                    while (rs.next()) add(kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.FacultyMember.serializer(), rs.getString(1)))
+                }
+            }
+        }.filter { majors.isEmpty() || it.majors.any { m -> m in majors } }
+            .sortedWith(compareBy({ it.role == null }, { it.name }))
+    }
 
     // ---- Academic calendar ----
 

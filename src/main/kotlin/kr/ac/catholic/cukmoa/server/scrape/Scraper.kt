@@ -77,6 +77,11 @@ val DEPT_BOARDS: Map<String, Map<String, String>> = linkedMapOf(
     "datascience" to linkedMapOf("notice" to "notice", "recruitment" to "recruitment"), // Use career if these are job postings
 )
 
+/** Department board code → faculty page name (teacher.do only for 정보통신전자공학부) */
+val FACULTY_PAGES: Map<String, String> = linkedMapOf(
+    "csie" to "faculty", "mtc" to "faculty", "ice" to "teacher", "ai" to "faculty", "datascience" to "faculty",
+)
+
 fun boards(): List<Board> = buildList {
     add(Board(AnnouncementSource.LMS, null, "notice", "notice", "https://e-cyber.catholic.ac.kr/ilos/community/notice_list.acl", "https://e-cyber.catholic.ac.kr", Kind.Lms, 500))
     add(Board(AnnouncementSource.MAIN, null, "notice", null, "$WWW/ko/campuslife/notice.do", WWW, Kind.MainNotice, 500))
@@ -116,6 +121,12 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
                 .onFailure { log.warn("scrape failed {}: {}", b.key, it.message) }
             db.recordRun(b.key, result)
         }
+        // Professor profiles rarely change, so they're read only during full collection.
+        if (mode == Mode.Full) {
+            val result = runCatching { scrapeFaculty() }
+            result.onSuccess { log.info("faculty members={}", it) }.onFailure { log.warn("faculty failed: {}", it.message) }
+            db.recordRun("faculty", result)
+        }
         // The academic calendar rarely changes, so it's read only during full collection. In January–February the previous academic year is needed too.
         if (mode == Mode.Full) for (academicYear in listOf(year - 1, year)) {
             val result = runCatching { scrapeCalendar(academicYear) }
@@ -124,6 +135,21 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
             db.recordRun("calendar/$academicYear", result)
         }
         log.info("scrape run finished mode={} total={}", mode, total)
+    }
+
+    /** Collects and merges professor profiles per department. If any department fails, the existing list is kept. */
+    private suspend fun scrapeFaculty(): Int {
+        val lists = FACULTY_PAGES.map { (major, path) ->
+            delay(requestDelay.toMillis())
+            val url = "https://$major.catholic.ac.kr/$major/faculty/$path.do"
+            val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(30)).header("User-Agent", USER_AGENT).GET().build()
+            val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
+            check(res.statusCode() in 200..299) { "$major: HTTP ${res.statusCode()}" }
+            parseFaculty(res.body(), major, url).also { check(it.isNotEmpty()) { "$major: 교수 목록이 비어 있음" } }
+        }
+        val merged = mergeFaculty(lists)
+        db.replaceFaculty(merged)
+        return merged.size
     }
 
     private suspend fun scrapeCalendar(academicYear: Int): Int {

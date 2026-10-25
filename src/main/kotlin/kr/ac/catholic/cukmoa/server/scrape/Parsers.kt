@@ -176,3 +176,46 @@ fun parseCalendar(html: String, academicYear: Int): List<CalendarRow> {
 }
 
 private fun iso(y: Int, m: Int, d: Int) = "%04d-%02d-%02d".format(y, m, d)
+
+/**
+ * Professor profiles on department websites (faculty.do / teacher.do). All full-time faculty appear on one page.
+ * Photos (base64) and contact details aren't collected — the app links to the profile.
+ */
+fun parseFaculty(html: String, major: String, pageUrl: String): List<kr.ac.catholic.cukmoa.model.FacultyMember> =
+    Jsoup.parse(html).select("div.bn-list-faculty > ul > li").mapNotNull { li ->
+        val box = li.selectFirst(".b-prof-con-box") ?: return@mapNotNull null
+        val name = box.selectFirst(".b-name")?.clean()?.ifEmpty { null } ?: return@mapNotNull null
+        val persNo = li.selectFirst("a[href*=persNo]")?.attr("href")?.substringAfter("persNo=")?.substringBefore("&")
+            ?: return@mapNotNull null
+        val info = box.select(".b-info-box li").associate { item ->
+            val label = item.selectFirst("span")?.clean().orEmpty()
+            val p = item.selectFirst("p")
+            val spans = p?.select("span")?.map { it.clean() }?.filter { it.isNotEmpty() }.orEmpty()
+            label to (if (spans.isNotEmpty()) spans.joinToString("\u0000") else p?.clean().orEmpty())
+        }
+        kr.ac.catholic.cukmoa.model.FacultyMember(
+            id = persNo,
+            name = name,
+            nameEn = box.selectFirst(".b-name-en")?.clean()?.ifEmpty { null },
+            position = box.select("p.b-name-ko > span").firstOrNull { !it.hasClass("b-name") }?.clean().orEmpty(),
+            // Roles differ per department, so the department name is attached (so they don't mix when merging joint appointments)
+            role = box.selectFirst(".b-prof-cate")?.clean()?.ifEmpty { null }?.let { r -> listOfNotNull(info["소속학과"]?.ifEmpty { null }, r).joinToString(" ") },
+            majors = listOf(major),
+            departments = listOfNotNull(info["소속학과"]?.ifEmpty { null }),
+            office = info["연구실"]?.ifEmpty { null },
+            field = info["연구분야"]?.split(Regex("\\s{2,}")).orEmpty().joinToString(", ").ifEmpty { null },
+            keywords = info["연구키워드"]?.split('\u0000')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
+            intro = box.selectFirst("pre.introKoList")?.text()?.trim()?.ifEmpty { null },
+            profileUrl = "$pageUrl?mode=view&persNo=$persNo",
+        )
+    }
+
+/** Merges a professor listed in several departments (joint appointment) into one. Uses the first department's info and adds departments and roles. */
+fun mergeFaculty(lists: List<List<kr.ac.catholic.cukmoa.model.FacultyMember>>): List<kr.ac.catholic.cukmoa.model.FacultyMember> =
+    lists.flatten().groupBy { it.id }.values.map { same ->
+        same.first().copy(
+            majors = same.flatMap { it.majors }.distinct(),
+            departments = same.flatMap { it.departments }.distinct(),
+            role = same.mapNotNull { it.role }.distinct().joinToString(", ").ifEmpty { null },
+        )
+    }

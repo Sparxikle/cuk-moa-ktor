@@ -5,7 +5,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kr.ac.catholic.cukmoa.model.AI_COLLEGE
+import kr.ac.catholic.cukmoa.server.scrape.mergeFaculty
 import kr.ac.catholic.cukmoa.server.scrape.parseCalendar
+import kr.ac.catholic.cukmoa.server.scrape.parseFaculty
 
 // Checks the processing rules against academic calendar HTML (saved 2026-10-25) and a department API response (saved the same day).
 class DataSourcesTest {
@@ -53,6 +55,29 @@ class DataSourcesTest {
         val err = """{"header":{"resultCode":"30","resultMsg":"SERVICE_KEY_IS_NOT_REGISTERED_ERROR"}}"""
         val e = kotlin.runCatching { parseUnivMajorResponse(err) }.exceptionOrNull()
         assertTrue(e?.message?.contains("SERVICE_KEY") == true)
+    }
+
+    @Test
+    fun `faculty pages parse and merge professors listed by two departments`() {
+        val ai = parseFaculty(fixture("faculty_ai.html"), "ai", "https://ai.catholic.ac.kr/ai/faculty/faculty.do")
+        val csie = parseFaculty(fixture("faculty_csie.html"), "csie", "https://csie.catholic.ac.kr/csie/faculty/faculty.do")
+        assertEquals(6, ai.size)
+        assertEquals(6, csie.size)
+        val kim = csie.first { it.name == "김유중" }
+        assertEquals("조교수", kim.position)
+        assertEquals("컴퓨터정보공학부 학과장", kim.role)
+        assertEquals("다솔관 D416", kim.office)
+        assertEquals(listOf("컴퓨터정보공학부"), kim.departments)
+        assertEquals("https://csie.catholic.ac.kr/csie/faculty/faculty.do?mode=view&persNo=212210346", kim.profileUrl)
+        assertEquals(listOf("데이터베이스 시스템", "빅데이터 분석", "정보 검색"), csie.first { it.name == "황병연" }.keywords)
+        assertTrue(ai.all { it.position.isNotEmpty() && it.id.all(Char::isDigit) })
+
+        // A professor listed in two departments is merged into one
+        val merged = mergeFaculty(listOf(ai, ai.map { it.copy(majors = listOf("datascience"), departments = listOf("데이터사이언스학과")) }, csie))
+        assertEquals(12, merged.size)
+        assertTrue(merged.filter { it.id in ai.map { a -> a.id } }.all { it.majors == listOf("ai", "datascience") })
+        // One department's chair doesn't appear as chair in another department
+        assertTrue(merged.mapNotNull { it.role }.all { "학과" in it || "학부" in it })
     }
 
     @Test

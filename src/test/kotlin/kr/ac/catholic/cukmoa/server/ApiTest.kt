@@ -107,6 +107,19 @@ class ApiTest {
     }
 
     @Test
+    fun `professors filter by major`() = withApi { db ->
+        fun member(id: String, name: String, majors: List<String>, role: String? = null) = kr.ac.catholic.cukmoa.model.FacultyMember(
+            id = id, name = name, position = "교수", role = role, majors = majors, departments = emptyList(), profileUrl = "https://x/?persNo=$id",
+        )
+        db.replaceFaculty(listOf(member("1", "나교수", listOf("ai", "datascience")), member("2", "가교수", listOf("csie")), member("3", "다교수", listOf("ai"), "학과장")))
+        val client = json()
+        suspend fun names(q: String) = client.get("/api/v1/professors$q").body<kr.ac.catholic.cukmoa.model.FacultyList>().items.map { it.name }
+        assertEquals(listOf("다교수", "가교수", "나교수"), names("")) // Department chairs first, then by name
+        assertEquals(listOf("다교수", "나교수"), names("?major=ai"))
+        assertEquals(listOf("가교수", "나교수"), names("?major=csie,datascience"))
+    }
+
+    @Test
     fun `calendar filters by campus`() = withApi { db ->
         db.replaceCalendar(
             2026,
