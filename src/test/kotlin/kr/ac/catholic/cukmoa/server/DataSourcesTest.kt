@@ -109,6 +109,16 @@ class DataSourcesTest {
         val ice = road("ice")
         assertTrue(ice.entries.isEmpty())
         assertEquals("https://ice.catholic.ac.kr/_res/cuk/ice/img/content/33.PNG", ice.imageUrl)
+
+        // Departments with only an image are filled from transcribed data (the image address is kept)
+        val iceFilled = kr.ac.catholic.cukmoa.server.scrape.withManualRoadmap(ice)
+        assertEquals(76, iceFilled.entries.size)
+        assertEquals(ice.imageUrl, iceFilled.imageUrl)
+        assertTrue(iceFilled.entries.all { it.semester == null && it.year in 1..4 })
+        assertEquals(setOf("정보통신 분야", "반도체시스템 분야"), iceFilled.entries.filter { it.yearLevel >= 3 }.map { it.track }.toSet())
+        assertTrue(iceFilled.note!!.contains("옮겨 적은"))
+        // Departments with a table are left untouched
+        assertEquals(ai, kr.ac.catholic.cukmoa.server.scrape.withManualRoadmap(ai))
     }
 
     @Test

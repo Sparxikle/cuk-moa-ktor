@@ -164,7 +164,7 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
         val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build()
         val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
         check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
-        val roadmap = parseMajorRoadmap(res.body(), major, department, url)
+        val roadmap = withManualRoadmap(parseMajorRoadmap(res.body(), major, department, url))
         // Neither a table nor an image means the page structure changed → don't delete the existing roadmap
         check(roadmap.entries.isNotEmpty() || roadmap.imageUrl != null) { "로드맵 표·그림을 찾지 못함" }
         db.replaceRoadmap(roadmap)
@@ -234,4 +234,15 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
         }
         return results
     }
+}
+
+/**
+ * Departments that publish their roadmap only as an image use hand-transcribed data (resources/roadmaps/{major}.json).
+ * If the department switches to a table (entries appear), the department page takes over automatically.
+ */
+fun withManualRoadmap(parsed: kr.ac.catholic.cukmoa.model.MajorRoadmap): kr.ac.catholic.cukmoa.model.MajorRoadmap {
+    if (parsed.entries.isNotEmpty()) return parsed
+    val text = Scraper::class.java.classLoader.getResource("roadmaps/${parsed.major}.json")?.readText() ?: return parsed
+    val manual = kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.MajorRoadmap.serializer(), text)
+    return parsed.copy(legend = manual.legend, entries = manual.entries, note = manual.note)
 }
