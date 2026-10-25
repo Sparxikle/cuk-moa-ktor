@@ -4,9 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kr.ac.catholic.cukmoa.model.AI_COLLEGE
 import kr.ac.catholic.cukmoa.server.scrape.parseCalendar
 
@@ -30,17 +27,32 @@ class DataSourcesTest {
     }
 
     @Test
-    fun `departments drop closed majors and admission units, group AI departments`() {
-        val rows = Json.parseToJsonElement(fixture("departments_api.json")).jsonObject["data"]!!.jsonArray.map { it.jsonObject }
+    fun `departments drop closed majors and admission units, carry subjects`() {
+        val (year, rows) = parseUnivMajorResponse(fixture("univ_major_api.json"))
+        assertEquals("2025", year)
         val list = buildDepartments(rows)
-        assertEquals(58, list.size)
-        assertTrue(list.none { it.name.endsWith("계열") || it.name == "기타모집단위" })
+        assertTrue(list.none { it.name.endsWith("계열") || it.name.endsWith("대학") || it.name.startsWith("기타") })
         val ai = list.filter { it.college == AI_COLLEGE }
         assertEquals(setOf("csie", "mtc", "datascience", "ice", "ai"), ai.mapNotNull { it.board }.toSet())
         assertEquals(AI_COLLEGE, list.first().college) // 성심 · AI departments first
-        assertEquals("의과대학", list.first { it.name == "의학과" }.college)
         assertEquals("성의", list.first { it.name == "의학과" }.campus)
-        assertNull(list.first { it.name == "철학과" }.board)
+        assertEquals("의과대학", list.first { it.name == "의학과" }.college)
+
+        val csie = list.first { it.name == "컴퓨터정보공학부" }
+        assertTrue("운영체제" in csie.subjects && "자료구조" in csie.subjects)
+        assertTrue(csie.subjects.none { it.isBlank() || it != it.trim() })
+        assertTrue(csie.careers.isNotEmpty())
+        assertEquals(36, csie.quota)
+        // Unify middle-dot notation (・ → ·)
+        assertTrue(list.any { it.name == "공간디자인·소비자학과" })
+        assertTrue(list.count { it.subjects.isNotEmpty() } >= list.size - 5, "most departments have subjects")
+    }
+
+    @Test
+    fun `data go kr error responses are reported`() {
+        val err = """{"header":{"resultCode":"30","resultMsg":"SERVICE_KEY_IS_NOT_REGISTERED_ERROR"}}"""
+        val e = kotlin.runCatching { parseUnivMajorResponse(err) }.exceptionOrNull()
+        assertTrue(e?.message?.contains("SERVICE_KEY") == true)
     }
 
     @Test
