@@ -1,4 +1,5 @@
 # 가대모아 (CUK Moa) — Server
+## License
 
 API server and school information collector for the [가대모아 app](https://github.com/Sparxikle/cuk-moa-kmp). Kotlin + Ktor 3, SQLite.
 
