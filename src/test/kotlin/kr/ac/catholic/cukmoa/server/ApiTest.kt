@@ -136,6 +136,38 @@ class ApiTest {
     }
 
     @Test
+    fun `imported classes are served for the latest semester and filter`() = withApi { db ->
+        // Shape of the school's 개설과목 export (fields trimmed); staff fields like updtIp must not be stored
+        fun row(no: String, cls: String, name: String, dept: String, grade: String?, prof: String) =
+            """{"openYyyy":"2026","openShtm":"20","sbjtNo":"$no","clssNo":"$cls","sbjtKorNm":"$name","sustNm":"$dept",
+                "pobtFgNm":"제1전공선택","pobtGrade":${grade?.let { "\"$it\"" } ?: "null"},"orgLangLtYnChk":null,
+                "respProfNm":"$prof","corsTemp2Nm":"진로개발","tlsnAplyRcnt":"51","pntCnt":"4/3","updtIp":"10.0.0.1"}"""
+        val export = """{"catholicResult":{},"DS_CURR_OPSB010":[
+            ${row("02922", "10", "컴퓨터와프로그래밍2", "AI의공학과", null, "김주완, 정진모")},
+            ${row("02922", "20", "컴퓨터와프로그래밍2", "AI의공학과", null, "남형수")},
+            ${row("06615", "05", "회계학현장실습Ⅴ", "회계학과", "4", "안성희")}]}"""
+        val parsed = parseOpenClasses(export)
+        assertEquals(listOf("김주완", "정진모"), parsed[0].professors)
+        assertEquals(4 to 3, parsed[0].hours to parsed[0].credits)
+        assertEquals("2", parsed[0].semester)
+        db.replaceClasses(parsed)
+        db.replaceClasses(parsed) // Re-importing the same semester replaces, not duplicates
+
+        val client = json()
+        suspend fun get(query: String) = client.get("/api/v1/classes$query").body<kr.ac.catholic.cukmoa.model.OpenClassList>()
+        val all = get("")
+        assertEquals(2026 to "2", all.year to all.semester)
+        assertEquals(3, all.items.size)
+        assertEquals(listOf("06615"), get("?department=회계학과").items.map { it.subjectNo })
+        assertEquals(listOf("06615"), get("?grade=4").items.map { it.subjectNo })
+        assertEquals(listOf("20"), get("?q=남형수").items.map { it.classNo })
+        assertEquals(2, get("?q=프로그래밍").items.size)
+        assertEquals(0, get("?year=2025").items.size)
+        assertEquals(HttpStatusCode.BadRequest, client.get("/api/v1/classes?grade=x").status)
+        assertTrue(db.use { c -> c.createStatement().executeQuery("SELECT data FROM open_classes").use { rs -> rs.next() && "10.0.0.1" !in rs.getString(1) } })
+    }
+
+    @Test
     fun `upsert keeps first_seen and does not duplicate`() = withApi { db ->
         val before = db.list(kr.ac.catholic.cukmoa.model.AnnouncementQuery(q = "공모전")).first.single()
         db.upsert(listOf(item("3", "AI 해커톤 공모전 참가자 모집 (마감 연장)", date = "2026-10-20")))
