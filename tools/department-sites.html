@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학과 사이트 목록</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #fff; --ink: #1b1d21; --ink2: #5b616b; --ink3: #8a909a;
+    --line: #e2e5ea; --accent: #2f6fde; --accent-soft: #e6eefc; --good: #1f8a4c; --warn: #b7791f; --bad: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417; --surface: #1c1f24; --ink: #eceef1; --ink2: #a6acb6; --ink3: #7b818b;
+      --line: #2c3037; --accent: #6f9dff; --accent-soft: #23304a; --good: #4cc27f; --warn: #e0a647; --bad: #f06f61;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  .app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+  aside { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+  .side-top { padding: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+  h1 { font-size: 17px; margin: 0; }
+  .progress { color: var(--ink2); font-size: 13px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .bar > div { height: 100%; background: var(--good); width: 0; transition: width .2s; }
+  input[type=search], input[type=url] {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  label.check { font-size: 13px; color: var(--ink2); display: flex; gap: 6px; align-items: center; }
+  ul { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+  li button {
+    width: 100%; text-align: left; border: 0; background: none; color: inherit; font: inherit;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer; display: flex; gap: 10px; align-items: center;
+  }
+  li button:hover { background: var(--bg); }
+  li button.active { background: var(--accent-soft); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--line); }
+  .dot.done { background: var(--good); } .dot.part { background: var(--warn); }
+  .sub { color: var(--ink3); font-size: 12px; }
+  main { overflow-y: auto; padding: 28px 32px 80px; }
+  .editor { max-width: 760px; display: grid; gap: 22px; }
+  .head h2 { margin: 0 0 2px; font-size: 24px; }
+  .field { display: grid; gap: 6px; }
+  .field > span { font-weight: 600; font-size: 14px; }
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; }
+  button.small {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px;
+    padding: 0 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  button.small:hover { border-color: var(--accent); color: var(--accent); }
+  button.small:disabled { opacity: .4; cursor: default; color: var(--ink); border-color: var(--line); }
+  .bad input { border-color: var(--bad); }
+  .hint { font-size: 12px; color: var(--ink3); }
+  .actions { display: flex; gap: 10px; align-items: center; position: sticky; bottom: 0; padding: 14px 0; background: var(--bg); }
+  button.primary {
+    background: var(--accent); color: #fff; border: 0; border-radius: 9px; padding: 10px 20px;
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  .status { font-size: 13px; color: var(--ink2); }
+  .status.err { color: var(--bad); }
+  .empty { color: var(--ink2); padding: 40px 0; }
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    aside { max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 20px 16px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="side-top">
+      <h1>학과 사이트 목록</h1>
+      <div class="progress" id="progress"></div>
+      <div class="bar"><div id="bar"></div></div>
+      <input type="search" id="q" placeholder="학과·단과대학 검색">
+      <label class="check"><input type="checkbox" id="todo"> 덜 채운 학과만</label>
+    </div>
+    <ul id="list"></ul>
+  </aside>
+  <main><div class="editor" id="editor"><div class="empty">왼쪽에서 학과를 고르세요.</div></div></main>
+</div>
+<script>
+const FIELDS = [["site", "학과 홈페이지"], ["roadmap", "전공 로드맵"], ["graduation", "졸업요건"]];
+// Fields that can have several pages
+const LISTS = [
+  ["professors", "교수 소개", "+ 교수 페이지 추가", "전임·겸임·명예교수처럼 페이지가 나뉘어 있으면 하나씩 넣어요."],
+  ["announcements", "공지 게시판", "+ 게시판 추가", "공지사항, 취업·진로, 학과 소식처럼 게시판마다 하나씩 넣어요."],
+];
+const ALL = FIELDS.length + LISTS.length;
+let entries = [], current = null, dirty = false;
+
+const $ = (id) => document.getElementById(id);
+const isUrl = (v) => v === "" || /^https?:\/\/\S+$/.test(v);
+const missing = (e) => FIELDS.filter(([k]) => !e[k]).length + LISTS.filter(([k]) => !e[k].some(Boolean)).length;
+const state = (e) => missing(e) === 0 ? "done" : missing(e) === ALL ? "" : "part";
+
+async function load() {
+  const res = await fetch("/api/sites");
+  entries = await res.json();
+  // #학과명 in the address opens that major
+  const wanted = decodeURIComponent(location.hash.slice(1));
+  const i = entries.findIndex((e) => e.department === wanted);
+  if (i >= 0) select(i); else renderList();
+}
+
+function renderList() {
+  const q = $("q").value.replace(/\s/g, "");
+  const todo = $("todo").checked;
+  const done = entries.filter((e) => missing(e) === 0).length;
+  $("progress").textContent = `${done} / ${entries.length}개 학과 완료`;
+  $("bar").style.width = `${(done / entries.length) * 100}%`;
+  const list = $("list");
+  list.replaceChildren();
+  entries.forEach((e, i) => {
+    if (todo && missing(e) === 0 && i !== current) return;
+    if (q && !(e.department + e.college).replace(/\s/g, "").includes(q)) return;
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.className = i === current ? "active" : "";
+    b.innerHTML = `<span class="dot ${state(e)}"></span><span><div></div><div class="sub"></div></span>`;
+    b.querySelector("div").textContent = e.department;
+    b.querySelector(".sub").textContent = `${e.campus} · ${e.college}`;
+    b.onclick = () => select(i);
+    li.append(b);
+    list.append(li);
+  });
+}
+
+function select(i) {
+  if (dirty && !confirm("저장하지 않은 변경이 있어요. 버리고 넘어갈까요?")) return;
+  current = i;
+  dirty = false;
+  history.replaceState(null, "", `#${encodeURIComponent(entries[i].department)}`);
+  renderEditor();
+  renderList();
+}
+
+function urlField(value, onInput, onRemove) {
+  const row = document.createElement("div");
+  row.className = "row";
+  const input = document.createElement("input");
+  input.type = "url";
+  input.placeholder = "https://";
+  input.value = value;
+  const open = document.createElement("button");
+  open.className = "small";
+  open.textContent = "열기";
+  open.type = "button";
+  const sync = () => {
+    const v = input.value.trim();
+    row.classList.toggle("bad", !isUrl(v));
+    open.disabled = !v || !isUrl(v);
+  };
+  input.oninput = () => { sync(); onInput(input.value.trim()); markDirty(); };
+  open.onclick = () => window.open(input.value.trim(), "_blank", "noopener");
+  row.append(input, open);
+  if (onRemove) {
+    const del = document.createElement("button");
+    del.className = "small";
+    del.type = "button";
+    del.textContent = "삭제";
+    del.onclick = onRemove;
+    row.append(del);
+  }
+  sync();
+  return row;
+}
+
+function renderEditor() {
+  const e = entries[current];
+  const ed = $("editor");
+  ed.replaceChildren();
+  const head = document.createElement("div");
+  head.className = "head";
+  head.innerHTML = "<h2></h2><div class='sub'></div>";
+  head.querySelector("h2").textContent = e.department;
+  head.querySelector(".sub").textContent = `${e.campus} · ${e.college}`;
+  ed.append(head);
+
+  FIELDS.forEach(([key, label]) => {
+    const f = document.createElement("div");
+    f.className = "field";
+    f.innerHTML = `<span>${label}</span>`;
+    f.append(urlField(e[key], (v) => { e[key] = v; }));
+    ed.append(f);
+  });
+
+  LISTS.forEach(([key, label, addLabel, hintText]) => {
+    const f = document.createElement("div");
+    f.className = "field";
+    f.innerHTML = `<span>${label}</span>`;
+    e[key].forEach((url, i) => {
+      f.append(urlField(url, (v) => { e[key][i] = v; }, () => { e[key].splice(i, 1); markDirty(); renderEditor(); }));
+    });
+    const add = document.createElement("button");
+    add.className = "small";
+    add.type = "button";
+    add.style.justifySelf = "start";
+    add.style.padding = "7px 12px";
+    add.textContent = addLabel;
+    add.onclick = () => {
+      e[key].push("");
+      markDirty();
+      renderEditor();
+      const inputs = $("editor").querySelectorAll(`[data-list="${key}"] input`);
+      inputs[inputs.length - 1].focus();
+    };
+    f.dataset.list = key;
+    f.append(add);
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = `${hintText} 빈 칸은 저장할 때 빠져요.`;
+    f.append(hint);
+    ed.append(f);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  actions.innerHTML = `<button class="primary" id="save">저장</button><span class="status" id="status"></span>`;
+  ed.append(actions);
+  $("save").onclick = save;
+  $("save").disabled = !dirty;
+  if (dirty) $("status").textContent = "저장하지 않은 변경이 있어요 (Ctrl+S)";
+}
+
+function markDirty() {
+  dirty = true;
+  const s = $("save");
+  if (s) { s.disabled = false; $("status").className = "status"; $("status").textContent = "저장하지 않은 변경이 있어요 (Ctrl+S)"; }
+}
+
+async function save() {
+  if (current === null || !dirty) return;
+  const e = entries[current];
+  LISTS.forEach(([k]) => { e[k] = e[k].map((u) => u.trim()).filter(Boolean); });
+  const bad = [...FIELDS.map(([k]) => e[k]), ...LISTS.flatMap(([k]) => e[k])].some((v) => !isUrl(v));
+  if (bad) { $("status").className = "status err"; $("status").textContent = "URL은 http:// 또는 https://로 시작해야 해요"; return; }
+  const res = await fetch("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(e) });
+  if (!res.ok) { $("status").className = "status err"; $("status").textContent = `저장하지 못했어요: ${await res.text()}`; return; }
+  dirty = false;
+  renderEditor();
+  $("status").textContent = "저장했어요";
+  renderList();
+}
+
+$("q").oninput = renderList;
+$("todo").onchange = renderList;
+document.addEventListener("keydown", (ev) => {
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === "s") { ev.preventDefault(); save(); }
+});
+window.addEventListener("beforeunload", (ev) => { if (dirty) ev.preventDefault(); });
+load();
+</script>
+</body>
+</html>

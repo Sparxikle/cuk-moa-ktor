@@ -1,0 +1,660 @@
+[
+  {
+    "department": "데이터사이언스학과",
+    "campus": "성심",
+    "college": "AI전자정보융합대학",
+    "site": "https://datascience.catholic.ac.kr",
+    "roadmap": "https://datascience.catholic.ac.kr/datascience/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://datascience.catholic.ac.kr/datascience/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://datascience.catholic.ac.kr/datascience/community/notice.do",
+      "https://datascience.catholic.ac.kr/datascience/community/recruitment.do"
+    ]
+  },
+  {
+    "department": "미디어기술콘텐츠학과",
+    "campus": "성심",
+    "college": "AI전자정보융합대학",
+    "site": "https://mtc.catholic.ac.kr",
+    "roadmap": "https://mtc.catholic.ac.kr/mtc/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://mtc.catholic.ac.kr/mtc/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://mtc.catholic.ac.kr/mtc/community/notice.do",
+      "https://mtc.catholic.ac.kr/mtc/community/news.do",
+      "https://mtc.catholic.ac.kr/mtc/community/notice1.do"
+    ]
+  },
+  {
+    "department": "인공지능학과",
+    "campus": "성심",
+    "college": "AI전자정보융합대학",
+    "site": "https://ai.catholic.ac.kr",
+    "roadmap": "https://ai.catholic.ac.kr/ai/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://ai.catholic.ac.kr/ai/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://ai.catholic.ac.kr/ai/community/notice.do",
+      "https://ai.catholic.ac.kr/ai/community/contest.do",
+      "https://ai.catholic.ac.kr/ai/community/graduatenotice.do"
+    ]
+  },
+  {
+    "department": "정보통신전자공학부",
+    "campus": "성심",
+    "college": "AI전자정보융합대학",
+    "site": "https://ice.catholic.ac.kr",
+    "roadmap": "https://ice.catholic.ac.kr/ice/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://ice.catholic.ac.kr/ice/faculty/teacher.do"
+    ],
+    "announcements": [
+      "https://ice.catholic.ac.kr/ice/community/notice.do",
+      "https://ice.catholic.ac.kr/ice/community/notice01.do",
+      "https://ice.catholic.ac.kr/ice/community/ice-news.do"
+    ]
+  },
+  {
+    "department": "컴퓨터정보공학부",
+    "campus": "성심",
+    "college": "AI전자정보융합대학",
+    "site": "https://csie.catholic.ac.kr",
+    "roadmap": "https://csie.catholic.ac.kr/csie/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://csie.catholic.ac.kr/csie/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://csie.catholic.ac.kr/csie/community/notice.do",
+      "https://csie.catholic.ac.kr/csie/community/career.do",
+      "https://csie.catholic.ac.kr/csie/community/news.do"
+    ]
+  },
+  {
+    "department": "AI의공학과",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "바이오로직스공학부",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "바이오메디컬소프트웨어학과",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "바이오메디컬화학공학과",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "생명공학과",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "에너지환경공학과",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "자유전공학부",
+    "campus": "성심",
+    "college": "공학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "IT파이낸스학과",
+    "campus": "성심",
+    "college": "글로벌경영대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "국제경영학과",
+    "campus": "성심",
+    "college": "글로벌경영대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "세무회계금융학과",
+    "campus": "성심",
+    "college": "글로벌경영대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "약학과",
+    "campus": "성심",
+    "college": "약학대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "성악과",
+    "campus": "성심",
+    "college": "예체능계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "예술미디어융합학과",
+    "campus": "성심",
+    "college": "예체능계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "음악과",
+    "campus": "성심",
+    "college": "예체능계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "글로벌인문경영융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "글로컬문화스토리텔링융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "금융공학융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "모바일유비쿼터스융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "문화예술경영전문가융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "비즈니스리더융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "빅데이터인문경영융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "사회혁신융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "스타트업융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "스토리텔링융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "의약나노바이오융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "한국어교육융복합전공",
+    "campus": "성심",
+    "college": "융복합전공",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "경영학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "https://business.catholic.ac.kr/business/index.do",
+    "roadmap": "https://business.catholic.ac.kr/business/course/roadmap.do",
+    "graduation": "",
+    "professors": [
+      "https://business.catholic.ac.kr/business/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://business.catholic.ac.kr/business/community/notice.do",
+      "https://business.catholic.ac.kr/business/community/news.do",
+      "https://business.catholic.ac.kr/business/community/cardnews.do",
+      "https://business.catholic.ac.kr/business/community/gallery001.do"
+    ]
+  },
+  {
+    "department": "경제학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "국사학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "국어국문학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "국제학부",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "글로벌경영학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "법학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "사회복지학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "사회학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "심리학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "아동학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "영어영문학부",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "일어일본문화학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "중국언어문화학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "철학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "특수교육과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "프랑스어문화학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "한국어문화학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "행정학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "회계학과",
+    "campus": "성심",
+    "college": "인문사회계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "공간디자인·소비자학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "물리학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "수학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "식품영양학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "의류학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "의생명과학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "화학과",
+    "campus": "성심",
+    "college": "자연과학계열",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "간호학과",
+    "campus": "성의",
+    "college": "간호대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "의예과",
+    "campus": "성의",
+    "college": "의과대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "의학과",
+    "campus": "성의",
+    "college": "의과대학",
+    "site": "",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [],
+    "announcements": []
+  },
+  {
+    "department": "신학과",
+    "campus": "성신",
+    "college": "신학대학",
+    "site": "https://songsin.catholic.ac.kr/ko/academics/theology.do",
+    "roadmap": "",
+    "graduation": "",
+    "professors": [
+      "https://songsin.catholic.ac.kr/ko/academics/faculty.do"
+    ],
+    "announcements": []
+  }
+]
