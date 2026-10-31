@@ -14,7 +14,13 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
+import io.ktor.server.plugins.origin
+import io.ktor.server.request.receive
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kr.ac.catholic.cukmoa.model.TimetableRequest
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import java.io.File
@@ -42,6 +48,7 @@ import kr.ac.catholic.cukmoa.model.ErrorCodes
 import kr.ac.catholic.cukmoa.model.ErrorDetail
 import kr.ac.catholic.cukmoa.model.Health
 import kr.ac.catholic.cukmoa.model.Majors
+import kr.ac.catholic.cukmoa.model.OpenClassList
 import kr.ac.catholic.cukmoa.server.db.Database
 import kr.ac.catholic.cukmoa.server.scrape.Mode
 import kr.ac.catholic.cukmoa.server.scrape.Scraper
@@ -56,7 +63,13 @@ private const val DEFAULT_LIMIT = 20
 private const val MAX_LIMIT = 100
 
 /** HTTP config and routes. Tests call the same function inside testApplication. */
-fun Application.module(db: Database, catalog: Catalog, departments: DepartmentService) {
+fun Application.module(
+    db: Database,
+    catalog: Catalog,
+    departments: DepartmentService,
+    timetables: TimetableService = TimetableService(db, catalog, ai = null),
+    jobs: JobService = JobService(db, departments, apiKey = null),
+) {
     install(ContentNegotiation) { json(ApiJson) }
     install(Compression)
     install(CallLogging)
@@ -67,6 +80,9 @@ fun Application.module(db: Database, catalog: Catalog, departments: DepartmentSe
     }
     install(StatusPages) {
         exception<BadRequest> { call, e -> call.error(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, e.message ?: "요청 형식을 확인해주세요.") }
+        exception<ServiceUnavailable> { call, e -> call.error(HttpStatusCode.ServiceUnavailable, ErrorCodes.AI_UNAVAILABLE, e.message ?: "잠시 뒤에 다시 해 주세요.") }
+        exception<TooManyRequests> { call, e -> call.error(HttpStatusCode.TooManyRequests, ErrorCodes.RATE_LIMITED, e.message ?: "잠시 뒤에 다시 해 주세요.") }
+        exception<io.ktor.server.plugins.BadRequestException> { call, _ -> call.error(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, "요청 형식을 확인해주세요.") }
         exception<Throwable> { call, e ->
             call.application.environment.log.error("unhandled", e)
             call.error(HttpStatusCode.InternalServerError, ErrorCodes.INTERNAL_ERROR, "서버에서 오류가 발생했습니다.")
@@ -178,6 +194,42 @@ fun Application.module(db: Database, catalog: Catalog, departments: DepartmentSe
             )
         }
 
+        get("/api/v1/classes") {
+            val p = call.request.queryParameters
+            fun values(name: String) = p[name]?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+            val latest = db.latestClassTerm()
+            val year = p["year"]?.let { it.toIntOrNull() ?: throw BadRequest("year 값이 숫자가 아닙니다.") } ?: latest?.first
+            val semester = p["semester"] ?: latest?.second
+            val grade = p["grade"]?.let { it.toIntOrNull() ?: throw BadRequest("grade 값이 숫자가 아닙니다.") }
+            call.respond(
+                OpenClassList(
+                    source = DataSource(
+                        label = "가톨릭대학교 개설과목 (학기마다 직접 반영)",
+                        asOf = latest?.third?.take(10) ?: java.time.LocalDate.now().toString(),
+                        isSample = false,
+                    ),
+                    year = year ?: 0,
+                    semester = semester.orEmpty(),
+                    items = if (year == null || semester == null) emptyList()
+                    else db.classes(year, semester, values("department"), values("category"), grade, p["q"]?.takeIf { it.isNotBlank() }),
+                ),
+            )
+        }
+
+        get("/api/v1/jobs") {
+            val department = call.request.queryParameters["department"]?.takeIf { it.isNotBlank() }
+                ?: throw BadRequest("department(예: 성심/경영학과)가 필요해요.")
+            call.respond(withContext(Dispatchers.IO) { jobs.forDepartment(department) })
+        }
+
+        post("/api/v1/timetables") {
+            val req = call.receive<TimetableRequest>()
+            // remoteAddress is the raw IP; remoteHost does a reverse DNS lookup that hangs for VPN (Tailscale) clients
+            val ip = call.request.origin.remoteAddress
+            val res = withContext(Dispatchers.IO) { timetables.suggest(req, ip) }
+            call.respond(res)
+        }
+
         get("/api/v1/announcements/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw BadRequest("공지 ID는 숫자입니다.")
             val item = db.get(id) ?: return@get call.error(HttpStatusCode.NotFound, ErrorCodes.ANNOUNCEMENT_NOT_FOUND, "공지를 찾을 수 없습니다.")
@@ -223,6 +275,15 @@ fun main(args: Array<String>) {
         return
     }
 
+    // `--import-classes <file>`: load the school's 개설과목 export (classes.json) and replace that semester's classes
+    args.indexOf("--import-classes").takeIf { it >= 0 }?.let { i ->
+        val items = parseOpenClasses(File(args[i + 1]).readText())
+        check(items.isNotEmpty()) { "개설과목이 없습니다: ${args[i + 1]}" }
+        db.replaceClasses(items)
+        items.groupBy { "${it.year}-${it.semester}" }.forEach { (term, list) -> println("imported ${list.size} classes for $term") }
+        return
+    }
+
     // `--once [--incremental]`: collect once and exit (for manual refresh and checks)
     if ("--once" in args) {
         runBlocking { scraper.runAll(if ("--incremental" in args) Mode.Incremental else Mode.Full) }
@@ -234,7 +295,11 @@ fun main(args: Array<String>) {
     val scrapeEnabled = env("SCRAPE_ENABLED", "true") != "false"
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") {
-        module(db, catalog, departments)
+        val gemini = env("GEMINI_API_KEY")?.takeIf { it.isNotBlank() }?.let { GeminiTimetableAi(it, env("GEMINI_MODEL", "gemini-3.5-flash-lite")) }
+        if (gemini == null) environment.log.info("GEMINI_API_KEY not set: AI timetable maker answers 503")
+        val careerNetKey = env("CAREERNET_API_KEY")?.takeIf { it.isNotBlank() }
+        if (careerNetKey == null) environment.log.info("CAREERNET_API_KEY not set: /api/v1/jobs returns job names only")
+        module(db, catalog, departments, TimetableService(db, catalog, gemini), JobService(db, departments, careerNetKey))
         if (scrapeEnabled) launch {
             // Full collection at startup, then new posts only every interval, and a full collection again once a day.
             var lastFull: TimeSource.Monotonic.ValueTimeMark? = null

@@ -54,7 +54,7 @@ class Database(private val path: String) {
     /** Remembers how many migrations were applied via user_version. Added files are applied on the next start. */
     private fun migrate(c: Connection) {
         val applied = c.createStatement().use { s -> s.executeQuery("PRAGMA user_version").use { it.getInt(1) } }
-        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql", "db/0004_roadmaps.sql")
+        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql", "db/0004_roadmaps.sql", "db/0005_classes.sql", "db/0006_jobs.sql")
         files.drop(applied).forEachIndexed { i, name ->
             val sql = javaClass.classLoader.getResource(name)!!.readText()
             c.autoCommit = false
@@ -239,6 +239,106 @@ class Database(private val path: String) {
             }
         }.filter { majors.isEmpty() || it.major in majors }
             .sortedBy { kr.ac.catholic.cukmoa.model.Majors.keys.indexOf(it.major) }
+    }
+
+    // ---- Open classes (개설과목) ----
+
+    /** Replaces each imported semester wholesale (classes the school closed disappear). */
+    fun replaceClasses(items: List<kr.ac.catholic.cukmoa.model.OpenClass>) = use { c ->
+        val now = nowUtc()
+        c.autoCommit = false
+        items.map { it.year to it.semester }.distinct().forEach { (year, semester) ->
+            c.prepareStatement("DELETE FROM open_classes WHERE year = ? AND semester = ?").use { st ->
+                st.setInt(1, year); st.setString(2, semester); st.executeUpdate()
+            }
+        }
+        c.prepareStatement(
+            """INSERT INTO open_classes (year, semester, subject_no, class_no, department, category, grade, name, data, imported_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        ).use { st ->
+            for (k in items) {
+                st.setInt(1, k.year); st.setString(2, k.semester); st.setString(3, k.subjectNo); st.setString(4, k.classNo)
+                st.setString(5, k.department); st.setString(6, k.category)
+                if (k.grade != null) st.setInt(7, k.grade!!) else st.setNull(7, java.sql.Types.INTEGER)
+                st.setString(8, k.name)
+                st.setString(9, kr.ac.catholic.cukmoa.model.ApiJson.encodeToString(kr.ac.catholic.cukmoa.model.OpenClass.serializer(), k))
+                st.setString(10, now)
+                st.addBatch()
+            }
+            st.executeBatch()
+        }
+        c.commit()
+    }
+
+    /** Latest imported semester: (year, semester, imported_at) */
+    fun latestClassTerm(): Triple<Int, String, String>? = use { c ->
+        c.createStatement().use { st ->
+            st.executeQuery("SELECT year, semester, MAX(imported_at) FROM open_classes GROUP BY year, semester ORDER BY year DESC, semester DESC LIMIT 1").use { rs ->
+                if (rs.next()) Triple(rs.getInt(1), rs.getString(2), rs.getString(3)) else null
+            }
+        }
+    }
+
+    /** One semester's classes. Empty filters match everything; q matches the class name or a professor. By department, name, class number. */
+    fun classes(
+        year: Int,
+        semester: String,
+        departments: List<String> = emptyList(),
+        categories: List<String> = emptyList(),
+        grade: Int? = null,
+        q: String? = null,
+    ): List<kr.ac.catholic.cukmoa.model.OpenClass> = use { c ->
+        val where = Where()
+        where.add("year = ?", year.toString())
+        where.add("semester = ?", semester)
+        where.inList("department", departments)
+        where.inList("category", categories)
+        grade?.let { where.add("grade = ?", it.toString()) }
+        c.prepareStatement("SELECT data FROM open_classes${where.sql} ORDER BY department, name, class_no").use { st ->
+            where.bind(st)
+            st.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) add(kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.OpenClass.serializer(), rs.getString(1)))
+                }
+            }
+        }
+    }.let { all ->
+        // Every word must appear in the name or a professor's name (classes are few, so this is done after the query)
+        val terms = q?.split(Regex("\\s+"))?.filter { it.isNotBlank() }.orEmpty()
+        all.filter { k -> terms.all { t -> t in k.name || k.professors.any { t in it } } }
+    }
+
+    // ---- Job details (CareerNet) ----
+
+    /** Cached job details by name, with when they were fetched */
+    fun jobInfo(names: Collection<String>): Map<String, Pair<kr.ac.catholic.cukmoa.model.JobInfo, String>> = use { c ->
+        if (names.isEmpty()) return@use emptyMap()
+        c.prepareStatement("SELECT name, data, fetched_at FROM job_info WHERE name IN (${names.joinToString { "?" }})").use { st ->
+            names.forEachIndexed { i, n -> st.setString(i + 1, n) }
+            st.executeQuery().use { rs ->
+                buildMap {
+                    while (rs.next()) put(rs.getString(1), kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.JobInfo.serializer(), rs.getString(2)) to rs.getString(3))
+                }
+            }
+        }
+    }
+
+    fun saveJobInfo(items: List<kr.ac.catholic.cukmoa.model.JobInfo>) = use { c ->
+        val now = nowUtc()
+        c.autoCommit = false
+        c.prepareStatement(
+            """INSERT INTO job_info (name, data, fetched_at) VALUES (?, ?, ?)
+               ON CONFLICT (name) DO UPDATE SET data = excluded.data, fetched_at = excluded.fetched_at""",
+        ).use { st ->
+            for (j in items) {
+                st.setString(1, j.name)
+                st.setString(2, kr.ac.catholic.cukmoa.model.ApiJson.encodeToString(kr.ac.catholic.cukmoa.model.JobInfo.serializer(), j))
+                st.setString(3, now)
+                st.addBatch()
+            }
+            st.executeBatch()
+        }
+        c.commit()
     }
 
     // ---- Academic calendar ----
