@@ -35,9 +35,18 @@ The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, ad
 | `SCRAPE_INTERVAL_MIN` | `30` | Interval for collecting new posts |
 | `SCRAPE_ENABLED` | `true` | `false` = API only |
 | `CATALOG_PATH` | none | Real catalog JSON. Sample if unset. The server won't start if references are broken |
+| `GEMINI_API_KEY` | none | Google AI Studio key for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Free tier: Google may use prompts to improve its models (no names or student IDs are sent) |
+| `CAREERNET_API_KEY` | none | CareerNet (career.go.kr) Open API key for job descriptions in `GET /api/v1/jobs`. Without it, jobs come back as names only |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model id |
 | `DATA_GO_API_KEY` | none | Public Data Portal "University Department Information" API key. Without it, the department list comes from the snapshot in the app repo |
 
 Settings are read from environment variables first, then from `.env` in the server folder. Copy `.env.example` to `.env`. **`.env` is not tracked by git** (never commit the key).
+
+Importing the semester's open classes (the school's 개설과목 export needs a login, so download `classes.json` by hand once a semester). It replaces that semester's classes in the database; restart the server afterwards:
+
+```sh
+./gradlew run --args="--import-classes ../classes.json"
+```
 
 Refreshing the department snapshot (saved in the app repo; commit it to update the app bundle):
 
@@ -57,6 +66,9 @@ Refreshing the department snapshot (saved in the app repo; commit it to update t
 | `GET /api/v1/announcements/meta` | Department names, announcement count per board, scrape status per board |
 | `GET /api/v1/departments` | All school departments (by college, excluding discontinued and admission-only units) |
 | `GET /api/v1/calendar?campus=성심` | School academic calendar (성심 · 성의 · 성신 campuses) |
+| `GET /api/v1/jobs?department=성심/경영학과` | A department's related jobs (대교협 names) with CareerNet descriptions, salary and link; cached 30 days per job |
+| `POST /api/v1/timetables` | AI timetable suggestions: 3 checked timetables (no clashes, credit range, free days). Limited to 12 AI calls/min, 450/day, 10 timetables/hour per IP to stay inside the free tier |
+| `GET /api/v1/classes` | Open classes of the latest imported semester, one row per class number (`department`, `category`, `grade`, `q` = class or professor name, `year`, `semester`) |
 | `GET /api/v1/professors` | Professor profiles from department websites (`major`, e.g. `?major=ai,csie`; department chairs first, then by name) |
 | `GET /api/v1/roadmaps` | Official department major roadmaps (`major`) |
 
