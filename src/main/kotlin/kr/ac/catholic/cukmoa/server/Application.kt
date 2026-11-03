@@ -299,7 +299,8 @@ fun main(args: Array<String>) {
         if (gemini == null) environment.log.info("GEMINI_API_KEY not set: AI timetable maker answers 503")
         val careerNetKey = env("CAREERNET_API_KEY")?.takeIf { it.isNotBlank() }
         if (careerNetKey == null) environment.log.info("CAREERNET_API_KEY not set: /api/v1/jobs returns job names only")
-        module(db, catalog, departments, TimetableService(db, catalog, gemini), JobService(db, departments, careerNetKey))
+        val jobs = JobService(db, departments, careerNetKey).also { it.refreshInBackgroundIfStale() }
+        module(db, catalog, departments, TimetableService(db, catalog, gemini), jobs)
         if (scrapeEnabled) launch {
             // Full collection at startup, then new posts only every interval, and a full collection again once a day.
             var lastFull: TimeSource.Monotonic.ValueTimeMark? = null

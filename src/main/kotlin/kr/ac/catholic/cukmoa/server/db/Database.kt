@@ -54,7 +54,7 @@ class Database(private val path: String) {
     /** Remembers how many migrations were applied via user_version. Added files are applied on the next start. */
     private fun migrate(c: Connection) {
         val applied = c.createStatement().use { s -> s.executeQuery("PRAGMA user_version").use { it.getInt(1) } }
-        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql", "db/0004_roadmaps.sql", "db/0005_classes.sql", "db/0006_jobs.sql")
+        val files = listOf("db/0001_init.sql", "db/0002_calendar.sql", "db/0003_faculty.sql", "db/0004_roadmaps.sql", "db/0005_classes.sql", "db/0006_jobs.sql", "db/0007_careernet.sql")
         files.drop(applied).forEachIndexed { i, name ->
             val sql = javaClass.classLoader.getResource(name)!!.readText()
             c.autoCommit = false
@@ -308,31 +308,26 @@ class Database(private val path: String) {
         all.filter { k -> terms.all { t -> t in k.name || k.professors.any { t in it } } }
     }
 
-    // ---- Job details (CareerNet) ----
+    // ---- CareerNet job encyclopedia ----
 
-    /** Cached job details by name, with when they were fetched */
-    fun jobInfo(names: Collection<String>): Map<String, Pair<kr.ac.catholic.cukmoa.model.JobInfo, String>> = use { c ->
-        if (names.isEmpty()) return@use emptyMap()
-        c.prepareStatement("SELECT name, data, fetched_at FROM job_info WHERE name IN (${names.joinToString { "?" }})").use { st ->
-            names.forEachIndexed { i, n -> st.setString(i + 1, n) }
-            st.executeQuery().use { rs ->
-                buildMap {
-                    while (rs.next()) put(rs.getString(1), kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.JobInfo.serializer(), rs.getString(2)) to rs.getString(3))
-                }
-            }
+    /** Every stored CareerNet job (raw jobs.json item) and when the oldest one was fetched; null time when empty */
+    fun careerNetJobs(): Pair<List<String>, String?> = use { c ->
+        val rows = c.createStatement().use { st ->
+            st.executeQuery("SELECT data FROM careernet_jobs ORDER BY CAST(job_cd AS INTEGER)").use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
         }
+        val oldest = c.createStatement().use { st -> st.executeQuery("SELECT MIN(fetched_at) FROM careernet_jobs").use { rs -> if (rs.next()) rs.getString(1) else null } }
+        rows to oldest
     }
 
-    fun saveJobInfo(items: List<kr.ac.catholic.cukmoa.model.JobInfo>) = use { c ->
+    /** Replaces the stored encyclopedia with a fresh download (code to raw item) in one transaction */
+    fun replaceCareerNetJobs(items: Map<String, String>) = use { c ->
         val now = nowUtc()
         c.autoCommit = false
-        c.prepareStatement(
-            """INSERT INTO job_info (name, data, fetched_at) VALUES (?, ?, ?)
-               ON CONFLICT (name) DO UPDATE SET data = excluded.data, fetched_at = excluded.fetched_at""",
-        ).use { st ->
-            for (j in items) {
-                st.setString(1, j.name)
-                st.setString(2, kr.ac.catholic.cukmoa.model.ApiJson.encodeToString(kr.ac.catholic.cukmoa.model.JobInfo.serializer(), j))
+        c.createStatement().use { it.executeUpdate("DELETE FROM careernet_jobs") }
+        c.prepareStatement("INSERT INTO careernet_jobs (job_cd, data, fetched_at) VALUES (?, ?, ?)").use { st ->
+            for ((code, data) in items) {
+                st.setString(1, code)
+                st.setString(2, data)
                 st.setString(3, now)
                 st.addBatch()
             }

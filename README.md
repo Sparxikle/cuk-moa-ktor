@@ -66,7 +66,7 @@ Refreshing the department snapshot (saved in the app repo; commit it to update t
 | `GET /api/v1/announcements/meta` | Department names, announcement count per board, scrape status per board |
 | `GET /api/v1/departments` | All school departments (by college, excluding discontinued and admission-only units) |
 | `GET /api/v1/calendar?campus=성심` | School academic calendar (성심 · 성의 · 성신 campuses) |
-| `GET /api/v1/jobs?department=성심/경영학과` | A department's related jobs (대교협 names) with CareerNet descriptions, salary and link; cached 30 days per job |
+| `GET /api/v1/jobs?department=성심/경영학과` | A department's related jobs (대교협 names) with CareerNet descriptions, salary and link. The whole CareerNet encyclopedia is downloaded every 30 days and names are matched on the server |
 | `POST /api/v1/timetables` | AI timetable suggestions: 3 checked timetables (no clashes, credit range, free days). Limited to 12 AI calls/min, 450/day, 10 timetables/hour per IP to stay inside the free tier |
 | `GET /api/v1/classes` | Open classes of the latest imported semester, one row per class number (`department`, `category`, `grade`, `q` = class or professor name, `year`, `semester`) |
 | `GET /api/v1/professors` | Professor profiles from department websites (`major`, e.g. `?major=ai,csie`; department chairs first, then by name) |
