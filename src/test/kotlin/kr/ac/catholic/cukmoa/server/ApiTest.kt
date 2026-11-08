@@ -41,7 +41,7 @@ class ApiTest {
             ),
         )
         testApplication {
-            application { module(db, loadCatalog(null), DepartmentService(apiKey = null)) }
+            application { module(db, loadCatalog(null), DepartmentService(apiKey = null, registry = SiteRegistry.parse(File("sites/department-sites.json").readText()))) }
             block(db)
         }
     }
@@ -103,7 +103,11 @@ class ApiTest {
     fun `departments fall back to the bundled snapshot without an API key`() = withApi {
         val list = json().get("/api/v1/departments").body<kr.ac.catholic.cukmoa.model.DepartmentList>()
         assertTrue(list.items.size > 50)
-        assertTrue(list.items.any { it.board == "csie" })
+        val csie = list.items.first { it.name == "컴퓨터정보공학부" }
+        assertEquals("csie", csie.board)
+        assertEquals("https://csie.catholic.ac.kr", csie.site)
+        assertTrue(csie.graduationUrl!!.endsWith("academic.do"))
+        assertTrue(list.items.count { it.board != null } > 40) // boards collected for most majors
     }
 
     @Test

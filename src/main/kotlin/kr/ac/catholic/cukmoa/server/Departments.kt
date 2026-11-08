@@ -17,7 +17,7 @@ import kr.ac.catholic.cukmoa.model.AI_COLLEGE
 import kr.ac.catholic.cukmoa.model.ApiJson
 import kr.ac.catholic.cukmoa.model.DataSource
 import kr.ac.catholic.cukmoa.model.Department
-import kr.ac.catholic.cukmoa.model.DepartmentBoards
+import kr.ac.catholic.cukmoa.model.AiCollegeDepartments
 import kr.ac.catholic.cukmoa.model.DepartmentList
 import org.slf4j.LoggerFactory
 
@@ -59,7 +59,7 @@ fun buildDepartments(rows: List<JsonObject>): List<Department> {
             val campus = CAMPUS[r.s("sggNm")] ?: r.s("sggNm")
             val college = r.s("collegeNm").takeIf { it.isNotEmpty() && it != "단과대구분없음" }
                 ?: when {
-                    name in DepartmentBoards -> AI_COLLEGE
+                    name in AiCollegeDepartments -> AI_COLLEGE
                     "융복합전공" in name -> "융복합전공"
                     else -> r.s("univOneslfAfilNm").takeIf { it.isNotEmpty() }?.let { "${it}계열" } ?: "기타"
                 }
@@ -68,7 +68,6 @@ fun buildDepartments(rows: List<JsonObject>): List<Department> {
                 name = name,
                 college = college,
                 campus = campus,
-                board = DepartmentBoards[name],
                 subjects = splitPlus(r.s("mainSubjNm")),
                 careers = splitPlus(r.s("relatCrNm")),
                 quota = r.s("mtcltnFxnoCnt").toIntOrNull(),
@@ -110,7 +109,7 @@ fun loadDotEnv(path: String = ".env"): Map<String, String> {
         .associate { line -> line.substringBefore("=").trim() to line.substringAfter("=").trim().removeSurrounding("\"") }
 }
 
-class DepartmentService(private val apiKey: String?) {
+class DepartmentService(private val apiKey: String?, private val registry: SiteRegistry = SiteRegistry(emptyList())) {
     private val log = LoggerFactory.getLogger(DepartmentService::class.java)
     private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
 
@@ -131,7 +130,26 @@ class DepartmentService(private val apiKey: String?) {
             .onFailure { log.warn("department API failed: {}", it.message) }
             .getOrNull()
         if (fresh != null) cached = Instant.now() to fresh
-        return fresh ?: cached?.second ?: snapshot
+        return withSites(fresh ?: cached?.second ?: snapshot)
+    }
+
+    /**
+     * Adds what the site registry knows: the board code (only when announcements are collected for that site),
+     * the homepage and the graduation requirements page. Applied to API data and the snapshot alike.
+     */
+    private fun withSites(list: DepartmentList): DepartmentList {
+        val collected = registry.boards.map { it.code }.toSet()
+        return list.copy(
+            items = list.items.map { d ->
+                val e = registry.entry(d.name)
+                val code = registry.codeByDepartment[d.name]
+                d.copy(
+                    board = code?.takeIf { it in collected },
+                    site = e?.site?.ifEmpty { null },
+                    graduationUrl = e?.graduation?.ifEmpty { null },
+                )
+            },
+        )
     }
 
     fun fetch(): DepartmentList {

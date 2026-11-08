@@ -2,10 +2,10 @@
 
 API server and school information collector for the [가대모아 app](https://github.com/Sparxikle/cuk-moa-kmp). Kotlin + Ktor 3, SQLite.
 
-- **Automatically collects this year's announcements** from school notices, LMS, events, external contests and 14 boards of the 5 departments in the College of AI, Electronics & Information Convergence (18 sources in total).
+- **Automatically collects this year's announcements** from school notices, LMS, events, external contests and every department board listed in the site registry (`sites/department-sites.json`, edited with `tools/department-sites.py`).
   Full scrape on startup, new posts only every 30 minutes, and a full rescrape once a day (refreshes view counts and pinned status).
 - Provides the school's **academic calendar** (per academic year) and the **full list of school departments** from the Public Data Portal (data.go.kr).
-- Collects **professor profiles** and **official major roadmaps** from the websites of the same 5 departments.
+- Collects **professor profiles** and **official major roadmaps** from the professor and roadmap pages in the same registry. Pages in a layout the parsers don't read are skipped and logged.
 - Provides the **catalog** of courses, career tracks, roadmaps, professors and graduation requirements (currently the sample catalog from the app repo).
 
 ## The app repo is required
@@ -34,6 +34,7 @@ The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, ad
 | `DATABASE_PATH` | `data/announcements.db` | Created if missing |
 | `SCRAPE_INTERVAL_MIN` | `30` | Interval for collecting new posts |
 | `SCRAPE_ENABLED` | `true` | `false` = API only |
+| `SITES_PATH` | `sites/department-sites.json` | Department site registry: boards, professor pages, roadmaps, graduation links. Restart after editing |
 | `CATALOG_PATH` | none | Real catalog JSON. Sample if unset. The server won't start if references are broken |
 | `GEMINI_API_KEY` | none | Google AI Studio key for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Free tier: Google may use prompts to improve its models (no names or student IDs are sent) |
 | `CAREERNET_API_KEY` | none | CareerNet (career.go.kr) Open API key for job descriptions in `GET /api/v1/jobs`. Without it, jobs come back as names only |

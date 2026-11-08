@@ -68,34 +68,22 @@ class Board internal constructor(
 private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 private const val WWW = "https://www.catholic.ac.kr"
 
-/** AI, Electronics & Information Convergence department boards: department → (board URL name → category). Categories: notice, career, news, external, graduate, recruitment */
-val DEPT_BOARDS: Map<String, Map<String, String>> = linkedMapOf(
-    "csie" to linkedMapOf("notice" to "notice", "career" to "career", "news" to "news"),
-    "mtc" to linkedMapOf("notice" to "notice", "news" to "news", "notice1" to "external"),
-    "ice" to linkedMapOf("notice" to "notice", "notice01" to "career", "ice-news" to "news"), // ice-news is currently empty
-    "ai" to linkedMapOf("notice" to "notice", "contest" to "external", "graduatenotice" to "graduate"),
-    "datascience" to linkedMapOf("notice" to "notice", "recruitment" to "recruitment"), // Use career if these are job postings
-)
-
-/** Department board code → faculty page name (teacher.do only for 정보통신전자공학부) */
-val FACULTY_PAGES: Map<String, String> = linkedMapOf(
-    "csie" to "faculty", "mtc" to "faculty", "ice" to "teacher", "ai" to "faculty", "datascience" to "faculty",
-)
-
-fun boards(): List<Board> = buildList {
+/** School-wide boards, then every department board in the site registry (sites/department-sites.json). */
+fun boards(registry: kr.ac.catholic.cukmoa.server.SiteRegistry): List<Board> = buildList {
     add(Board(AnnouncementSource.LMS, null, "notice", "notice", "https://e-cyber.catholic.ac.kr/ilos/community/notice_list.acl", "https://e-cyber.catholic.ac.kr", Kind.Lms, 500))
     add(Board(AnnouncementSource.MAIN, null, "notice", null, "$WWW/ko/campuslife/notice.do", WWW, Kind.MainNotice, 500))
     add(Board(AnnouncementSource.EVENT, null, "notice_event", "event", "$WWW/ko/campuslife/notice_event.do", WWW, Kind.Event, 500))
     add(Board(AnnouncementSource.OUTSIDE, null, "notice_outside", "external", "$WWW/ko/campuslife/notice_outside.do", WWW, Kind.Outside, 500))
-    DEPT_BOARDS.forEach { (major, boards) ->
-        val origin = "https://$major.catholic.ac.kr"
-        boards.forEach { (board, category) ->
-            add(Board(AnnouncementSource.DEPT, major, board, category, "$origin/$major/community/$board.do", origin, Kind.Dept, 50))
-        }
+    registry.boards.forEach { b ->
+        add(Board(AnnouncementSource.DEPT, b.code, b.board, b.category, b.url, b.origin, Kind.Dept, 50))
     }
 }
 
-class Scraper(private val db: Database, private val requestDelay: Duration = Duration.ofMillis(300)) {
+class Scraper(
+    private val db: Database,
+    private val registry: kr.ac.catholic.cukmoa.server.SiteRegistry,
+    private val requestDelay: Duration = Duration.ofMillis(300),
+) {
     private val log = LoggerFactory.getLogger(Scraper::class.java)
     private val http = HttpClient.newBuilder()
         .cookieHandler(CookieManager())
@@ -110,7 +98,7 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
         val year = currentYear()
         log.info("scrape run started mode={} year={}", mode, year)
         var total = 0
-        for (b in boards()) {
+        for (b in boards(registry)) {
             val result = runCatching {
                 val known = if (mode == Mode.Incremental) db.knownArticles(b.source, b.major, b.board) else emptySet()
                 val items = scrapeBoard(b, year, known)
@@ -128,10 +116,10 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
             db.recordRun("faculty", result)
         }
         // Official department roadmaps also only during full collection. Recorded per department, so one failure doesn't stop the rest from updating.
-        if (mode == Mode.Full) for ((major, department) in kr.ac.catholic.cukmoa.model.Majors) {
-            val result = runCatching { scrapeRoadmap(major, department) }
-            result.onSuccess { log.info("roadmap {} entries={}", major, it) }.onFailure { log.warn("roadmap {} failed: {}", major, it.message) }
-            db.recordRun("roadmap/$major", result)
+        if (mode == Mode.Full) for (r in registry.roadmaps) {
+            val result = runCatching { scrapeRoadmap(r) }
+            result.onSuccess { log.info("roadmap {} entries={}", r.key, it) }.onFailure { log.warn("roadmap {} failed: {}", r.key, it.message) }
+            db.recordRun("roadmap/${r.key}", result)
         }
         // The academic calendar rarely changes, so it's read only during full collection. In January–February the previous academic year is needed too.
         if (mode == Mode.Full) for (academicYear in listOf(year - 1, year)) {
@@ -143,28 +131,40 @@ class Scraper(private val db: Database, private val requestDelay: Duration = Dur
         log.info("scrape run finished mode={} total={}", mode, total)
     }
 
-    /** Collects and merges professor profiles per department. If any department fails, the existing list is kept. */
+    /**
+     * Collects and merges professor profiles from every professor page in the registry. Pages in a layout the parser
+     * doesn't read (labs, honorary lists …) are skipped and logged. Nothing read at all → the existing list is kept.
+     */
     private suspend fun scrapeFaculty(): Int {
-        val lists = FACULTY_PAGES.map { (major, path) ->
-            delay(requestDelay.toMillis())
-            val url = "https://$major.catholic.ac.kr/$major/faculty/$path.do"
-            val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(30)).header("User-Agent", USER_AGENT).GET().build()
-            val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
-            check(res.statusCode() in 200..299) { "$major: HTTP ${res.statusCode()}" }
-            parseFaculty(res.body(), major, url).also { check(it.isNotEmpty()) { "$major: 교수 목록이 비어 있음" } }
+        val lists = registry.facultyPages.flatMap { (code, urls) ->
+            urls.mapNotNull { url ->
+                runCatching {
+                    delay(requestDelay.toMillis())
+                    val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(30)).header("User-Agent", USER_AGENT).GET().build()
+                    val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
+                    check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
+                    // Pages without a 소속학과 field: the majors on that site
+                    parseFaculty(res.body(), code, url).map { m ->
+                        if (m.departments.isNotEmpty()) m else m.copy(departments = registry.departmentsByCode[code].orEmpty())
+                    }
+                }.onFailure { log.warn("faculty page failed {}: {}", url, it.message) }
+                    .getOrNull()?.takeIf { it.isNotEmpty() }
+                    .also { if (it == null) log.info("faculty page skipped (no profiles read) {}", url) }
+            }
         }
+        check(lists.isNotEmpty()) { "교수 목록을 하나도 읽지 못함" }
         val merged = mergeFaculty(lists)
         db.replaceFaculty(merged)
         return merged.size
     }
 
-    private suspend fun scrapeRoadmap(major: String, department: String): Int {
+    private suspend fun scrapeRoadmap(r: kr.ac.catholic.cukmoa.server.SiteRoadmap): Int {
         delay(requestDelay.toMillis())
-        val url = "https://$major.catholic.ac.kr/$major/course/roadmap.do"
+        val url = r.url
         val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build()
         val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
         check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
-        val roadmap = withManualRoadmap(parseMajorRoadmap(res.body(), major, department, url))
+        val roadmap = withManualRoadmap(parseMajorRoadmap(res.body(), r.key, r.department, url))
         // Neither a table nor an image means the page structure changed → don't delete the existing roadmap
         check(roadmap.entries.isNotEmpty() || roadmap.imageUrl != null) { "로드맵 표·그림을 찾지 못함" }
         db.replaceRoadmap(roadmap)

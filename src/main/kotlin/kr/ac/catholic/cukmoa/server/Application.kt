@@ -47,7 +47,6 @@ import kr.ac.catholic.cukmoa.model.ErrorBody
 import kr.ac.catholic.cukmoa.model.ErrorCodes
 import kr.ac.catholic.cukmoa.model.ErrorDetail
 import kr.ac.catholic.cukmoa.model.Health
-import kr.ac.catholic.cukmoa.model.Majors
 import kr.ac.catholic.cukmoa.model.OpenClassList
 import kr.ac.catholic.cukmoa.server.db.Database
 import kr.ac.catholic.cukmoa.server.scrape.Mode
@@ -69,6 +68,7 @@ fun Application.module(
     departments: DepartmentService,
     timetables: TimetableService = TimetableService(db, catalog, ai = null),
     jobs: JobService = JobService(db, departments, apiKey = null),
+    sites: SiteRegistry = SiteRegistry(emptyList()),
 ) {
     install(ContentNegotiation) { json(ApiJson) }
     install(Compression)
@@ -137,7 +137,7 @@ fun Application.module(
             call.respond(
                 AnnouncementMeta(
                     sources = listOf(AnnouncementSource.LMS, AnnouncementSource.MAIN, AnnouncementSource.EVENT, AnnouncementSource.OUTSIDE, AnnouncementSource.DEPT),
-                    majors = Majors,
+                    majors = sites.majorNames,
                     boards = db.boardCounts(),
                     lastScrape = runs.mapNotNull { it.lastOk }.maxOrNull(),
                     scrapeRuns = runs,
@@ -264,8 +264,9 @@ fun loadCatalog(path: String?): Catalog {
 fun main(args: Array<String>) {
     val db = Database(env("DATABASE_PATH", "data/announcements.db"))
     val catalog = loadCatalog(System.getenv("CATALOG_PATH"))
-    val scraper = Scraper(db)
-    val departments = DepartmentService(env("DATA_GO_API_KEY"))
+    val sites = SiteRegistry.load(env("SITES_PATH", "sites/department-sites.json"))
+    val scraper = Scraper(db, sites)
+    val departments = DepartmentService(env("DATA_GO_API_KEY"), sites)
 
     // `--export-departments <file>`: fetch the department list from the API and save it as the snapshot in the app repo
     args.indexOf("--export-departments").takeIf { it >= 0 }?.let { i ->
@@ -300,7 +301,7 @@ fun main(args: Array<String>) {
         val careerNetKey = env("CAREERNET_API_KEY")?.takeIf { it.isNotBlank() }
         if (careerNetKey == null) environment.log.info("CAREERNET_API_KEY not set: /api/v1/jobs returns job names only")
         val jobs = JobService(db, departments, careerNetKey).also { it.refreshInBackgroundIfStale() }
-        module(db, catalog, departments, TimetableService(db, catalog, gemini), jobs)
+        module(db, catalog, departments, TimetableService(db, catalog, gemini), jobs, sites)
         if (scrapeEnabled) launch {
             // Full collection at startup, then new posts only every interval, and a full collection again once a day.
             var lastFull: TimeSource.Monotonic.ValueTimeMark? = null

@@ -35,7 +35,7 @@ class DataSourcesTest {
         val list = buildDepartments(rows)
         assertTrue(list.none { it.name.endsWith("계열") || it.name.endsWith("대학") || it.name.startsWith("기타") })
         val ai = list.filter { it.college == AI_COLLEGE }
-        assertEquals(setOf("csie", "mtc", "datascience", "ice", "ai"), ai.mapNotNull { it.board }.toSet())
+        assertEquals(kr.ac.catholic.cukmoa.model.AiCollegeDepartments, ai.map { it.name }.toSet())
         assertEquals(AI_COLLEGE, list.first().college) // 성심 · AI departments first
         assertEquals("성의", list.first { it.name == "의학과" }.campus)
         assertEquals("의과대학", list.first { it.name == "의학과" }.college)

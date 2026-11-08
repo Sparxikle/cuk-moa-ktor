@@ -5,7 +5,7 @@
     "college": "AI전자정보융합대학",
     "site": "https://datascience.catholic.ac.kr",
     "roadmap": "https://datascience.catholic.ac.kr/datascience/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://datascience.catholic.ac.kr/datascience/course/academic.do",
     "professors": [
       "https://datascience.catholic.ac.kr/datascience/faculty/faculty.do"
     ],
@@ -20,7 +20,7 @@
     "college": "AI전자정보융합대학",
     "site": "https://mtc.catholic.ac.kr",
     "roadmap": "https://mtc.catholic.ac.kr/mtc/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://mtc.catholic.ac.kr/mtc/course/academic.do",
     "professors": [
       "https://mtc.catholic.ac.kr/mtc/faculty/faculty.do"
     ],
@@ -36,7 +36,7 @@
     "college": "AI전자정보융합대학",
     "site": "https://ai.catholic.ac.kr",
     "roadmap": "https://ai.catholic.ac.kr/ai/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://ai.catholic.ac.kr/ai/course/academic.do",
     "professors": [
       "https://ai.catholic.ac.kr/ai/faculty/faculty.do"
     ],
@@ -52,7 +52,7 @@
     "college": "AI전자정보융합대학",
     "site": "https://ice.catholic.ac.kr",
     "roadmap": "https://ice.catholic.ac.kr/ice/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://ice.catholic.ac.kr/ice/course/academic.do",
     "professors": [
       "https://ice.catholic.ac.kr/ice/faculty/teacher.do"
     ],
@@ -68,7 +68,7 @@
     "college": "AI전자정보융합대학",
     "site": "https://csie.catholic.ac.kr",
     "roadmap": "https://csie.catholic.ac.kr/csie/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://csie.catholic.ac.kr/csie/course/academic.do",
     "professors": [
       "https://csie.catholic.ac.kr/csie/faculty/faculty.do"
     ],
@@ -82,197 +82,315 @@
     "department": "AI의공학과",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://aibme.catholic.ac.kr/aibme/index.do",
+    "roadmap": "https://aibme.catholic.ac.kr/aibme/course/roadmap.do",
+    "graduation": "https://aibme.catholic.ac.kr/aibme/course/academic.do",
+    "professors": [
+      "https://aibme.catholic.ac.kr/aibme/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://aibme.catholic.ac.kr/aibme/community/notice.do",
+      "https://aibme.catholic.ac.kr/aibme/community/news.do"
+    ]
   },
   {
     "department": "바이오로직스공학부",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://ble.catholic.ac.kr/BLE/index.do",
+    "roadmap": "https://ble.catholic.ac.kr/BLE/course/roadmap.do",
+    "graduation": "http://ble.catholic.ac.kr/BLE/course/academic.do",
+    "professors": [
+      "https://ble.catholic.ac.kr/BLE/faculty/faculty.do",
+      "https://ble.catholic.ac.kr/BLE/faculty/adjunct.do"
+    ],
+    "announcements": [
+      "https://ble.catholic.ac.kr/BLE/community/notice.do",
+      "https://ble.catholic.ac.kr/BLE/community/physics-board.do"
+    ]
   },
   {
     "department": "바이오메디컬소프트웨어학과",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://bmsw.catholic.ac.kr/bmsw/index.do",
+    "roadmap": "https://bmsw.catholic.ac.kr/bmsw/course/roadmap.do",
+    "graduation": "https://bmsw.catholic.ac.kr/bmsw/course/academic.do",
+    "professors": [
+      "https://bmsw.catholic.ac.kr/bmsw/faculty/faculty.do",
+      "https://bmsw.catholic.ac.kr/bmsw/faculty/adjunct.do"
+    ],
+    "announcements": [
+      "https://bmsw.catholic.ac.kr/bmsw/community/notice.do",
+      "https://bmsw.catholic.ac.kr/bmsw/community/news.do"
+    ]
   },
   {
     "department": "바이오메디컬화학공학과",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://bmce.catholic.ac.kr/bmce/index.do",
+    "roadmap": "https://bmce.catholic.ac.kr/bmce/course/roadmap.do",
+    "graduation": "https://bmce.catholic.ac.kr/bmce/course/academic.do",
+    "professors": [
+      "https://bmce.catholic.ac.kr/bmce/faculty/faculty.do",
+      "https://bmce.catholic.ac.kr/bmce/faculty/concurrent.do"
+    ],
+    "announcements": [
+      "https://bmce.catholic.ac.kr/bmce/community/notice.do",
+      "https://bmce.catholic.ac.kr/bmce/community/news.do"
+    ]
   },
   {
     "department": "생명공학과",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://biotech.catholic.ac.kr/biotech/index.do",
+    "roadmap": "https://biotech.catholic.ac.kr/biotech/course/roadmap.do",
+    "graduation": "https://biotech.catholic.ac.kr/biotech/course/academic.do",
+    "professors": [
+      "https://biotech.catholic.ac.kr/biotech/faculty/faculty.do",
+      "https://biotech.catholic.ac.kr/biotech/faculty/concurrent.do"
+    ],
+    "announcements": [
+      "https://biotech.catholic.ac.kr/biotech/community/notice.do",
+      "https://biotech.catholic.ac.kr/biotech/community/faq.do",
+      "https://biotech.catholic.ac.kr/biotech/community/news.do"
+    ]
   },
   {
     "department": "에너지환경공학과",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://envi.catholic.ac.kr/envi/index.do",
+    "roadmap": "https://envi.catholic.ac.kr/envi/course/roadmap.do",
+    "graduation": "https://envi.catholic.ac.kr/envi/course/academic.do",
+    "professors": [
+      "https://envi.catholic.ac.kr/envi/faculty/faculty.do",
+      "https://envi.catholic.ac.kr/envi/faculty/introduction-lab.do"
+    ],
+    "announcements": [
+      "https://envi.catholic.ac.kr/envi/community/notice.do",
+      "https://envi.catholic.ac.kr/envi/community/news.do",
+      "https://envi.catholic.ac.kr/envi/community/gallery0012.do"
+    ]
   },
   {
     "department": "자유전공학부",
     "campus": "성심",
     "college": "공학계열",
-    "site": "",
-    "roadmap": "",
+    "site": "https://liberal.catholic.ac.kr/liberal/index.do",
+    "roadmap": "https://liberal.catholic.ac.kr/liberal/course/roadmap.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://liberal.catholic.ac.kr/liberal/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://liberal.catholic.ac.kr/liberal/community/notice.do",
+      "https://liberal.catholic.ac.kr/liberal/community/faq.do"
+    ]
   },
   {
     "department": "IT파이낸스학과",
     "campus": "성심",
     "college": "글로벌경영대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://gbs.catholic.ac.kr/gbs/index.do",
+    "roadmap": "https://gbs.catholic.ac.kr/gbs/course/roadmap03.do",
+    "graduation": "https://gbs.catholic.ac.kr/gbs/course/graduation3.do",
+    "professors": [
+      "https://gbs.catholic.ac.kr/gbs/faculty/dean.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/faculty.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/adjunct-glb.do"
+    ],
+    "announcements": [
+      "https://gbs.catholic.ac.kr/gbs/community/notice.do",
+      "https://ggkm.catholic.ac.kr/ggkm/index.do"
+    ]
   },
   {
     "department": "국제경영학과",
     "campus": "성심",
     "college": "글로벌경영대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://gbs.catholic.ac.kr/gbs/index.do",
+    "roadmap": "https://gbs.catholic.ac.kr/gbs/course/roadmap01.do",
+    "graduation": "https://gbs.catholic.ac.kr/gbs/course/graduation1.do",
+    "professors": [
+      "https://gbs.catholic.ac.kr/gbs/faculty/dean.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/faculty.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/adjunct-glb.do"
+    ],
+    "announcements": [
+      "https://gbs.catholic.ac.kr/gbs/community/notice.do",
+      "https://ggkm.catholic.ac.kr/ggkm/index.do"
+    ]
   },
   {
     "department": "세무회계금융학과",
     "campus": "성심",
     "college": "글로벌경영대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://gbs.catholic.ac.kr/gbs/index.do",
+    "roadmap": "https://gbs.catholic.ac.kr/gbs/course/roadmap02.do",
+    "graduation": "https://gbs.catholic.ac.kr/gbs/course/graduation2.do",
+    "professors": [
+      "https://gbs.catholic.ac.kr/gbs/faculty/dean.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/faculty.do",
+      "https://gbs.catholic.ac.kr/gbs/faculty/adjunct-glb.do"
+    ],
+    "announcements": [
+      "https://gbs.catholic.ac.kr/gbs/community/notice.do",
+      "https://ggkm.catholic.ac.kr/ggkm/index.do"
+    ]
   },
   {
     "department": "약학과",
     "campus": "성심",
     "college": "약학대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://pharmacy.catholic.ac.kr/pharmacy/index.do",
+    "roadmap": "https://pharmacy.catholic.ac.kr/pharmacy/course/roadmap.do",
+    "graduation": "https://pharmacy.catholic.ac.kr/pharmacy/community/notice.do?mode=view&articleNo=116674&article.offset=320&articleLimit=10",
+    "professors": [
+      "https://pharmacy.catholic.ac.kr/pharmacy/faculty/chief.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/faculty/faculty.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/faculty/adjunct.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/faculty/hospital.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/faculty/pharmacy.do"
+    ],
+    "announcements": [
+      "https://pharmacy.catholic.ac.kr/pharmacy/community/notice.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/community/gallery.do",
+      "https://pharmacy.catholic.ac.kr/pharmacy/institute/resources.do"
+    ]
   },
   {
     "department": "성악과",
     "campus": "성심",
     "college": "예체능계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://voice.catholic.ac.kr/voice/index.do",
+    "roadmap": "https://voice.catholic.ac.kr/voice/graduate/roadmap.do",
+    "graduation": "https://voice.catholic.ac.kr/voice/graduate/academic.do",
+    "professors": [
+      "https://voice.catholic.ac.kr/voice/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://voice.catholic.ac.kr/voice/community/notice.do",
+      "https://voice.catholic.ac.kr/voice/community/news.do"
+    ]
   },
   {
     "department": "예술미디어융합학과",
     "campus": "성심",
     "college": "예체능계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://gamc.catholic.ac.kr/gamc/index.do",
+    "roadmap": "https://gamc.catholic.ac.kr/gamc/info/career.do",
+    "graduation": "https://gamc.catholic.ac.kr/gamc/graduate/academic.do",
+    "professors": [
+      "https://gamc.catholic.ac.kr/gamc/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://gamc.catholic.ac.kr/gamc/community/notice.do",
+      "https://gamc.catholic.ac.kr/gamc/community/news.do"
+    ]
   },
   {
     "department": "음악과",
     "campus": "성심",
     "college": "예체능계열",
-    "site": "",
-    "roadmap": "",
+    "site": "https://music.catholic.ac.kr/music/index.do",
+    "roadmap": "https://music.catholic.ac.kr/music/course/roadmap.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://music.catholic.ac.kr/music/faculty/professor-emeritus.do",
+      "https://music.catholic.ac.kr/music/faculty/teacher-piano.do"
+    ],
+    "announcements": [
+      "https://music.catholic.ac.kr/music/community/notice.do",
+      "https://music.catholic.ac.kr/music/community/event.do"
+    ]
   },
   {
     "department": "글로벌인문경영융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/index.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/global.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/faculty.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "글로컬문화스토리텔링융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/glocal.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/glocal.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/glocal.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "금융공학융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/financial_engineering.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/financial_engineering.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/faculty.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "모바일유비쿼터스융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/index.do",
     "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "graduation": "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do?mode=view&articleNo=205267&title=%EB%AA%A8%EB%B0%94%EC%9D%BC%EC%9C%A0%EB%B9%84%EC%BF%BC%ED%84%B0%EC%8A%A4%EC%9C%B5%EB%B3%B5%ED%95%A9%EC%A0%84%EA%B3%B5+%EC%A1%B8%EC%97%85%EC%9A%94%EA%B1%B4",
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "문화예술경영전문가융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/culture_and_arts.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/culture_and_arts.do",
     "graduation": "",
-    "professors": [],
-    "announcements": []
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/faculty.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "비즈니스리더융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/index.do",
     "roadmap": "",
     "graduation": "",
     "professors": [],
@@ -282,17 +400,19 @@
     "department": "빅데이터인문경영융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/big_data.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/big_data.do",
     "graduation": "",
-    "professors": [],
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/big_data.do"
+    ],
     "announcements": []
   },
   {
     "department": "사회혁신융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://careerold.catholic.ac.kr/career/startup/social_convergence-major.do",
     "roadmap": "",
     "graduation": "",
     "professors": [],
@@ -302,7 +422,7 @@
     "department": "스타트업융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://careerold.catholic.ac.kr/career/startup/startup_convergence-major.do",
     "roadmap": "",
     "graduation": "",
     "professors": [],
@@ -312,7 +432,7 @@
     "department": "스토리텔링융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/index.do",
     "roadmap": "",
     "graduation": "",
     "professors": [],
@@ -322,17 +442,23 @@
     "department": "의약나노바이오융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/pharmaceutical_nanobio.do",
+    "roadmap": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/pharmaceutical_nanobio.do",
+    "graduation": "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/pharmaceutical_nanobio.do",
+    "professors": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/faculty.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/adjunct.do"
+    ],
+    "announcements": [
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/notice.do",
+      "https://major-convergence.catholic.ac.kr/major_convergence/notice/file.do"
+    ]
   },
   {
     "department": "한국어교육융복합전공",
     "campus": "성심",
     "college": "융복합전공",
-    "site": "",
+    "site": "https://major-convergence.catholic.ac.kr/major_convergence/index.do",
     "roadmap": "",
     "graduation": "",
     "professors": [],
@@ -344,7 +470,7 @@
     "college": "인문사회계열",
     "site": "https://business.catholic.ac.kr/business/index.do",
     "roadmap": "https://business.catholic.ac.kr/business/course/roadmap.do",
-    "graduation": "",
+    "graduation": "https://business.catholic.ac.kr/business/course/academic.do",
     "professors": [
       "https://business.catholic.ac.kr/business/faculty/faculty.do"
     ],
@@ -359,291 +485,503 @@
     "department": "경제학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "http://economics.catholic.ac.kr/economics/index.do",
+    "roadmap": "http://economics.catholic.ac.kr/economics/course/roadmap.do",
+    "graduation": "https://economics.catholic.ac.kr/economics/course/academic.do",
+    "professors": [
+      "https://economics.catholic.ac.kr/economics/faculty/faculty.do",
+      "https://economics.catholic.ac.kr/economics/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://economics.catholic.ac.kr/economics/community/notice.do",
+      "https://economics.catholic.ac.kr/economics/community/faq.do"
+    ]
   },
   {
     "department": "국사학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://koreanhistory.catholic.ac.kr/koreanhistory/index.do",
+    "roadmap": "https://koreanhistory.catholic.ac.kr/koreanhistory/course/roadmap.do",
+    "graduation": "https://koreanhistory.catholic.ac.kr/koreanhistory/course/academic-information.do",
+    "professors": [
+      "https://koreanhistory.catholic.ac.kr/koreanhistory/faculty/faculty.do",
+      "https://koreanhistory.catholic.ac.kr/koreanhistory/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://koreanhistory.catholic.ac.kr/koreanhistory/community/notice.do",
+      "https://koreanhistory.catholic.ac.kr/koreanhistory/community/resources.do",
+      "https://koreanhistory.catholic.ac.kr/koreanhistory/community/news.do"
+    ]
   },
   {
     "department": "국어국문학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://korean.catholic.ac.kr/korean/index.do",
+    "roadmap": "https://korean.catholic.ac.kr/korean/course/roadmap.do",
+    "graduation": "https://korean.catholic.ac.kr/korean/course/roadmap.do",
+    "professors": [
+      "https://korean.catholic.ac.kr/korean/faculty/faculty.do",
+      "https://korean.catholic.ac.kr/korean/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://korean.catholic.ac.kr/korean/community/notice.do",
+      "https://korean.catholic.ac.kr/korean/community/news.do"
+    ]
   },
   {
     "department": "국제학부",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://is.catholic.ac.kr/is/index.do",
+    "roadmap": "https://is.catholic.ac.kr/is/course/roadmap.do",
+    "graduation": "https://is.catholic.ac.kr/is/course/academic.do",
+    "professors": [
+      "https://is.catholic.ac.kr/is/faculty/faculty.do",
+      "https://is.catholic.ac.kr/is/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://is.catholic.ac.kr/is/community/notice.do",
+      "https://is.catholic.ac.kr/is/community/news.do",
+      "https://is.catholic.ac.kr/is/community/faq.do"
+    ]
   },
   {
     "department": "글로벌경영학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://globalbiz.catholic.ac.kr/globalbiz/index.do",
+    "roadmap": "https://globalbiz.catholic.ac.kr/globalbiz/course/roadmap.do",
+    "graduation": "https://globalbiz.catholic.ac.kr/globalbiz/course/academic.do",
+    "professors": [
+      "https://globalbiz.catholic.ac.kr/globalbiz/faculty/faculty.do",
+      "https://globalbiz.catholic.ac.kr/globalbiz/faculty/visiting.do"
+    ],
+    "announcements": [
+      "http://globalbiz.catholic.ac.kr/globalbiz/community/notice.do",
+      "http://globalbiz.catholic.ac.kr/globalbiz/community/faq.do",
+      "https://globalbiz.catholic.ac.kr/globalbiz/community/news.do"
+    ]
   },
   {
     "department": "법학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://law.catholic.ac.kr/law/index.do",
+    "roadmap": "https://law.catholic.ac.kr/law/course/roadmap.do",
+    "graduation": "https://law.catholic.ac.kr/law/course/academic.do",
+    "professors": [
+      "https://law.catholic.ac.kr/law/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://law.catholic.ac.kr/law/community/notice.do"
+    ]
   },
   {
     "department": "사회복지학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://socialwelfare.catholic.ac.kr/socialwelfare/index.do",
+    "roadmap": "https://socialwelfare.catholic.ac.kr/socialwelfare/course/roadmap.do",
+    "graduation": "https://socialwelfare.catholic.ac.kr/socialwelfare/course/academic.do",
+    "professors": [
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/faculty/faculty.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/community/notice.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/info/graduate_notice.do",
+      "http://socialwelfare.catholic.ac.kr/socialwelfare/info/practice_notice.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/info/practice_reference.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/community/faq.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/community/information.do",
+      "https://socialwelfare.catholic.ac.kr/socialwelfare/community/news.do"
+    ]
   },
   {
     "department": "사회학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://sociology.catholic.ac.kr/sociology/index.do",
+    "roadmap": "https://sociology.catholic.ac.kr/sociology/course/roadmap.do",
+    "graduation": "https://sociology.catholic.ac.kr/sociology/course/academic.do",
+    "professors": [
+      "https://sociology.catholic.ac.kr/sociology/faculty/faculty.do",
+      "https://sociology.catholic.ac.kr/sociology/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://sociology.catholic.ac.kr/sociology/community/notice.do",
+      "https://sociology.catholic.ac.kr/sociology/community/competition.do",
+      "https://sociology.catholic.ac.kr/sociology/community/faq-grad.do"
+    ]
   },
   {
     "department": "심리학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://psychology.catholic.ac.kr/psychology/index.do",
+    "roadmap": "https://psychology.catholic.ac.kr/psychology/course/roadmap.do",
+    "graduation": "https://psychology.catholic.ac.kr/psychology/course/academic.do",
+    "professors": [
+      "http://psychology.catholic.ac.kr/psychology/faculty/faculty.do",
+      "https://psychology.catholic.ac.kr/psychology/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://psychology.catholic.ac.kr/psychology/community/notice.do",
+      "https://psychology.catholic.ac.kr/psychology/community/gallery.do",
+      "https://psychology.catholic.ac.kr/psychology/community/news.do"
+    ]
   },
   {
     "department": "아동학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://children.catholic.ac.kr/children/index.do",
+    "roadmap": "https://children.catholic.ac.kr/children/course/roadmap.do",
+    "graduation": "https://children.catholic.ac.kr/children/course/academic.do",
+    "professors": [
+      "https://children.catholic.ac.kr/children/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://children.catholic.ac.kr/children/faculty/faculty.do",
+      "https://children.catholic.ac.kr/children/community/recruitment.do",
+      "https://children.catholic.ac.kr/children/community/news.do"
+    ]
   },
   {
     "department": "영어영문학부",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://english.catholic.ac.kr/english/index.do",
+    "roadmap": "https://english.catholic.ac.kr/english/course/roadmap.do",
+    "graduation": "https://english.catholic.ac.kr/english/course/academic.do",
+    "professors": [
+      "https://english.catholic.ac.kr/english/faculty/faculty.do",
+      "https://english.catholic.ac.kr/english/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://english.catholic.ac.kr/english/community/notice.do",
+      "https://english.catholic.ac.kr/english/community/news.do",
+      "https://english.catholic.ac.kr/english/community/linc.do",
+      "https://english.catholic.ac.kr/english/community/council.do",
+      "https://english.catholic.ac.kr/english/community/faq.do",
+      "https://english.catholic.ac.kr/english/community/promotion.do"
+    ]
   },
   {
     "department": "일어일본문화학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://japanese.catholic.ac.kr/japanese/index.do",
+    "roadmap": "https://japanese.catholic.ac.kr/japanese/course/roadmap.do",
+    "graduation": "https://japanese.catholic.ac.kr/japanese/major/law.do",
+    "professors": [
+      "https://japanese.catholic.ac.kr/japanese/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://japanese.catholic.ac.kr/japanese/major/notice.do",
+      "https://japanese.catholic.ac.kr/japanese/major/career.do",
+      "https://japanese.catholic.ac.kr/japanese/support/scholarship.do"
+    ]
   },
   {
     "department": "중국언어문화학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://cn.catholic.ac.kr/cn/index.do",
+    "roadmap": "https://cn.catholic.ac.kr/cn/course/roadmap.do",
+    "graduation": "https://cn.catholic.ac.kr/cn/course/academic.do",
+    "professors": [
+      "https://cn.catholic.ac.kr/cn/faculty/faculty.do",
+      "https://cn.catholic.ac.kr/cn/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://cn.catholic.ac.kr/cn/community/notice.do",
+      "https://cn.catholic.ac.kr/cn/info/graduatenotice.do",
+      "https://cn.catholic.ac.kr/cn/community/gallery.do",
+      "https://cn.catholic.ac.kr/cn/community/newsletter.do"
+    ]
   },
   {
     "department": "철학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://philosophy.catholic.ac.kr/philosophy/index.do",
+    "roadmap": "https://philosophy.catholic.ac.kr/philosophy/course/roadmap.do",
+    "graduation": "https://philosophy.catholic.ac.kr/philosophy/course/academic.do",
+    "professors": [
+      "https://philosophy.catholic.ac.kr/philosophy/faculty/faculty.do",
+      "https://philosophy.catholic.ac.kr/philosophy/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://philosophy.catholic.ac.kr/philosophy/community/notice.do",
+      "https://philosophy.catholic.ac.kr/philosophy/community/graduation_notice.do",
+      "https://philosophy.catholic.ac.kr/philosophy/community/faq.do",
+      "https://philosophy.catholic.ac.kr/philosophy/community/document.do",
+      "https://philosophy.catholic.ac.kr/philosophy/community/news.do"
+    ]
   },
   {
     "department": "특수교육과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://sped.catholic.ac.kr/sped/index.do",
+    "roadmap": "https://sped.catholic.ac.kr/sped/course/roadmap.do",
+    "graduation": "https://sped.catholic.ac.kr/sped/course/academic.do",
+    "professors": [
+      "https://sped.catholic.ac.kr/sped/faculty/faculty.do",
+      "https://sped.catholic.ac.kr/sped/faculty/honorary.do",
+      "https://sped.catholic.ac.kr/sped/faculty/faculty02.do"
+    ],
+    "announcements": [
+      "https://sped.catholic.ac.kr/sped/community/notice.do",
+      "https://sped.catholic.ac.kr/sped/community/Bachelor.do",
+      "https://sped.catholic.ac.kr/sped/community/Service.do",
+      "https://sped.catholic.ac.kr/sped/community/appointment.do",
+      "https://sped.catholic.ac.kr/sped/community/appointment01.do",
+      "https://sped.catholic.ac.kr/sped/community/news.do"
+    ]
   },
   {
     "department": "프랑스어문화학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://french.catholic.ac.kr/french/index.do",
+    "roadmap": "https://french.catholic.ac.kr/french/course/roadmap.do",
+    "graduation": "https://french.catholic.ac.kr/french/course/academic.do",
+    "professors": [
+      "https://french.catholic.ac.kr/french/faculty/faculty.do",
+      "https://french.catholic.ac.kr/french/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://french.catholic.ac.kr/french/faculty/honorary.do",
+      "https://french.catholic.ac.kr/french/community/recruitment.do",
+      "https://french.catholic.ac.kr/french/community/news.do",
+      "https://french.catholic.ac.kr/french/community/faq.do"
+    ]
   },
   {
     "department": "한국어문화학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://klc.catholic.ac.kr/klc/index.do",
+    "roadmap": "https://klc.catholic.ac.kr/klc/course/roadmap.do",
+    "graduation": "https://klc.catholic.ac.kr/klc/course/academic.do",
+    "professors": [
+      "https://klc.catholic.ac.kr/klc/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://klc.catholic.ac.kr/klc/community/notice.do",
+      "https://klc.catholic.ac.kr/klc/community/faq.do",
+      "http://klc.catholic.ac.kr/klc/community/gallery001.do"
+    ]
   },
   {
     "department": "행정학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://pa.catholic.ac.kr/pa/index.do",
+    "roadmap": "https://pa.catholic.ac.kr/pa/course/roadmap.do",
+    "graduation": "https://pa.catholic.ac.kr/pa/course/academic.do",
+    "professors": [
+      "https://pa.catholic.ac.kr/pa/faculty/faculty.do",
+      "https://pa.catholic.ac.kr/pa/faculty/faculty001.do"
+    ],
+    "announcements": [
+      "https://pa.catholic.ac.kr/pa/community/notice.do",
+      "https://pa.catholic.ac.kr/pa/community/news.do"
+    ]
   },
   {
     "department": "회계학과",
     "campus": "성심",
     "college": "인문사회계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://accounting.catholic.ac.kr/accounting/index.do",
+    "roadmap": "https://accounting.catholic.ac.kr/accounting/course/roadmap.do",
+    "graduation": "https://accounting.catholic.ac.kr/accounting/course/academic.do",
+    "professors": [
+      "https://accounting.catholic.ac.kr/accounting/faculty/full-time-professor.do"
+    ],
+    "announcements": [
+      "http://accounting.catholic.ac.kr/accounting/community/notice.do",
+      "https://accounting.catholic.ac.kr/accounting/community/news_link.do"
+    ]
   },
   {
     "department": "공간디자인·소비자학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://design.catholic.ac.kr/design/index.do",
+    "roadmap": "https://design.catholic.ac.kr/design/course/major-roadmap.do",
+    "graduation": "https://design.catholic.ac.kr/design/course/academic.do",
+    "professors": [
+      "https://design.catholic.ac.kr/design/faculty/faculty.do",
+      "https://design.catholic.ac.kr/design/faculty/honorary.do",
+      "https://design.catholic.ac.kr/design/faculty/teacher.do"
+    ],
+    "announcements": [
+      "https://design.catholic.ac.kr/design/community/notice.do",
+      "https://design.catholic.ac.kr/design/community/news.do",
+      "https://design.catholic.ac.kr/design/community/notice01.do"
+    ]
   },
   {
     "department": "물리학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://physics.catholic.ac.kr/physics/index.do",
+    "roadmap": "https://physics.catholic.ac.kr/physics/course/roadmap.do",
+    "graduation": "https://physics.catholic.ac.kr/physics/course/academic.do",
+    "professors": [
+      "https://physics.catholic.ac.kr/physics/faculty/faculty.do"
+    ],
+    "announcements": [
+      "https://physics.catholic.ac.kr/physics/community/notice.do",
+      "https://physics.catholic.ac.kr/physics/community/job.do"
+    ]
   },
   {
     "department": "수학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://math.catholic.ac.kr/math/index.do",
+    "roadmap": "https://math.catholic.ac.kr/math/course/roadmap.do",
+    "graduation": "https://math.catholic.ac.kr/math/course/academic.do",
+    "professors": [
+      "https://math.catholic.ac.kr/math/faculty/faculty.do",
+      "https://math.catholic.ac.kr/math/faculty/faculty001.do"
+    ],
+    "announcements": [
+      "https://math.catholic.ac.kr/math/community/notice.do",
+      "https://math.catholic.ac.kr/math/community/job.do",
+      "https://math.catholic.ac.kr/math/community/event.do"
+    ]
   },
   {
     "department": "식품영양학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://fn.catholic.ac.kr/fn/index.do",
+    "roadmap": "https://fn.catholic.ac.kr/fn/course/roadmap.do",
+    "graduation": "https://fn.catholic.ac.kr/fn/course/academic-information.do",
+    "professors": [
+      "https://fn.catholic.ac.kr/fn/faculty/faculty.do",
+      "https://fn.catholic.ac.kr/fn/faculty/honorary.do",
+      "https://fn.catholic.ac.kr/fn/faculty/adjunct.do",
+      "https://fn.catholic.ac.kr/fn/faculty/visiting.do"
+    ],
+    "announcements": [
+      "https://fn.catholic.ac.kr/fn/community/notice.do",
+      "https://fn.catholic.ac.kr/fn/community/faq.do",
+      "https://fn.catholic.ac.kr/fn/community/notice01.do"
+    ]
   },
   {
     "department": "의류학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://clothing.catholic.ac.kr/clothing/index.do",
+    "roadmap": "https://clothing.catholic.ac.kr/clothing/course/roadmap.do",
+    "graduation": "https://clothing.catholic.ac.kr/clothing/course/academic.do",
+    "professors": [
+      "https://clothing.catholic.ac.kr/clothing/faculty/faculty.do",
+      "https://clothing.catholic.ac.kr/clothing/faculty/adjunct001.do",
+      "https://clothing.catholic.ac.kr/clothing/faculty/adjunct.do",
+      "https://clothing.catholic.ac.kr/clothing/faculty/emeritus.do"
+    ],
+    "announcements": [
+      "https://clothing.catholic.ac.kr/clothing/community/notice.do",
+      "https://clothing.catholic.ac.kr/clothing/community/fashion-archive002.do",
+      "https://clothing.catholic.ac.kr/clothing/community/resources.do",
+      "https://clothing.catholic.ac.kr/clothing/community/exhibition.do",
+      "https://clothing.catholic.ac.kr/clothing/community/fashion-archive.do"
+    ]
   },
   {
     "department": "의생명과학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://mbs.catholic.ac.kr/mbs/index.do",
+    "roadmap": "https://mbs.catholic.ac.kr/mbs/course/roadmap.do",
+    "graduation": "https://mbs.catholic.ac.kr/mbs/course/academic.do",
+    "professors": [
+      "https://mbs.catholic.ac.kr/mbs/faculty/faculty.do",
+      "https://mbs.catholic.ac.kr/mbs/faculty/concurrent.do"
+    ],
+    "announcements": [
+      "https://mbs.catholic.ac.kr/mbs/community/notice.do",
+      "https://mbs.catholic.ac.kr/mbs/community/news.do",
+      "https://mbs.catholic.ac.kr/mbs/community/extracurricular-activities.do"
+    ]
   },
   {
     "department": "화학과",
     "campus": "성심",
     "college": "자연과학계열",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://chemistry.catholic.ac.kr/chemistry/index.do",
+    "roadmap": "https://chemistry.catholic.ac.kr/chemistry/course/roadmap.do",
+    "graduation": "https://chemistry.catholic.ac.kr/chemistry/course/academic.do",
+    "professors": [
+      "https://chemistry.catholic.ac.kr/chemistry/faculty/faculty.do",
+      "https://chemistry.catholic.ac.kr/chemistry/faculty/honorary.do"
+    ],
+    "announcements": [
+      "https://chemistry.catholic.ac.kr/chemistry/community/notice.do",
+      "https://chemistry.catholic.ac.kr/chemistry/community/career.do"
+    ]
   },
   {
     "department": "간호학과",
     "campus": "성의",
     "college": "간호대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://nursing.catholic.ac.kr/nursing/index.do",
+    "roadmap": "https://nursing.catholic.ac.kr/nursing/sutdent-life/class_schedule.do",
+    "graduation": "https://nursing.catholic.ac.kr/nursing/sutdent-life/academic_policy.do",
+    "professors": [
+      "https://nursing.catholic.ac.kr/nursing/research/DCN2.do",
+      "https://nursing.catholic.ac.kr/nursing/research/DFHN1.do",
+      "https://nursing.catholic.ac.kr/nursing/research/DHS1.do",
+      "https://nursing.catholic.ac.kr/nursing/research/DVFR1.do",
+      "https://nursing.catholic.ac.kr/nursing/research/EP1.do",
+      "https://nursing.catholic.ac.kr/nursing/research/VP1.do",
+      "https://nursing.catholic.ac.kr/nursing/research/CPI1.do"
+    ],
+    "announcements": [
+      "https://nursing.catholic.ac.kr/nursing/community/notice.do",
+      "https://nursing.catholic.ac.kr/nursing/community/job.do",
+      "https://nursing.catholic.ac.kr/nursing/community/news.do"
+    ]
   },
   {
     "department": "의예과",
     "campus": "성의",
     "college": "의과대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://medicine.catholic.ac.kr/medicine/index.do",
+    "roadmap": "https://medicine.catholic.ac.kr/medicine/info/curriculum1.do",
+    "graduation": "https://medicine.catholic.ac.kr/medicine/info/regulations.do",
+    "professors": [
+      "https://medicine.catholic.ac.kr/medicine/class/Laboratory2.do"
+    ],
+    "announcements": [
+      "https://medicine.catholic.ac.kr/medicine/community/notice.do",
+      "https://medicine.catholic.ac.kr/medicine/community/news.do"
+    ]
   },
   {
     "department": "의학과",
     "campus": "성의",
     "college": "의과대학",
-    "site": "",
-    "roadmap": "",
-    "graduation": "",
-    "professors": [],
-    "announcements": []
+    "site": "https://medicine.catholic.ac.kr/medicine/index.do",
+    "roadmap": "https://medicine.catholic.ac.kr/medicine/info/curriculum2.do",
+    "graduation": "https://medicine.catholic.ac.kr/medicine/info/regulations.do",
+    "professors": [
+      "https://medicine.catholic.ac.kr/medicine/class/Laboratory2.do"
+    ],
+    "announcements": [
+      "https://medicine.catholic.ac.kr/medicine/community/notice.do",
+      "https://medicine.catholic.ac.kr/medicine/community/news.do"
+    ]
   },
   {
     "department": "신학과",

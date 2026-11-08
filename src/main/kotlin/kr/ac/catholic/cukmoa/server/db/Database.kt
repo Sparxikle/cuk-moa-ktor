@@ -229,7 +229,7 @@ class Database(private val path: String) {
         }
     }
 
-    /** All if majors is empty (in department board order) */
+    /** All if majors is empty; otherwise those whose key or site code is one of the given board codes. By department name. */
     fun roadmaps(majors: List<String>): List<kr.ac.catholic.cukmoa.model.MajorRoadmap> = use { c ->
         c.createStatement().use { st ->
             st.executeQuery("SELECT data FROM major_roadmaps").use { rs ->
@@ -237,8 +237,8 @@ class Database(private val path: String) {
                     while (rs.next()) add(kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.MajorRoadmap.serializer(), rs.getString(1)))
                 }
             }
-        }.filter { majors.isEmpty() || it.major in majors }
-            .sortedBy { kr.ac.catholic.cukmoa.model.Majors.keys.indexOf(it.major) }
+        }.filter { majors.isEmpty() || it.major in majors || it.major.substringBefore('/') in majors }
+            .sortedBy { it.department }
     }
 
     // ---- Open classes (개설과목) ----
