@@ -48,4 +48,15 @@ class SiteRegistryTest {
         assertTrue(shared.isNotEmpty())
         registry.roadmaps.filter { it.code in shared }.forEach { assertTrue(it.key.startsWith("${it.code}/"), it.key) }
     }
+
+    @Test
+    fun `every 융복합전공 shares the convergence site for notices, professors and roadmaps`() {
+        val convergence = registry.entries.map { it.department }.filter { "융복합전공" in it }
+        assertTrue(convergence.size >= 12)
+        convergence.forEach { assertEquals("major_convergence", registry.codeByDepartment[it], it) }
+        assertEquals(convergence.toSet(), registry.departmentsByCode["major_convergence"]!!.toSet())
+        assertTrue(registry.facultyPages["major_convergence"]!!.any { it.endsWith("undergraduate-info/faculty.do") })
+        assertEquals(listOf("융복합전공"), registry.facultyDepartments("major_convergence"))
+        assertEquals("major_convergence/금융공학융복합전공", registry.roadmaps.first { it.department == "금융공학융복합전공" }.key)
+    }
 }

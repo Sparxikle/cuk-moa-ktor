@@ -143,9 +143,11 @@ class Scraper(
                     val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(30)).header("User-Agent", USER_AGENT).GET().build()
                     val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
                     check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
+                    // Regular CMS faculty pages first, otherwise card lists (융복합 주임·겸임·초빙교수)
+                    val position = if ("adjunct" in url || "visiting" in url) "겸임·초빙교수" else "주임교수"
                     // Pages without a 소속학과 field: the majors on that site
-                    parseFaculty(res.body(), code, url).map { m ->
-                        if (m.departments.isNotEmpty()) m else m.copy(departments = registry.departmentsByCode[code].orEmpty())
+                    parseFaculty(res.body(), code, url).ifEmpty { parseCardFaculty(res.body(), code, url, position) }.map { m ->
+                        if (m.departments.isNotEmpty()) m else m.copy(departments = registry.facultyDepartments(code))
                     }
                 }.onFailure { log.warn("faculty page failed {}: {}", url, it.message) }
                     .getOrNull()?.takeIf { it.isNotEmpty() }
@@ -153,7 +155,7 @@ class Scraper(
             }
         }
         check(lists.isNotEmpty()) { "교수 목록을 하나도 읽지 못함" }
-        val merged = mergeFaculty(lists)
+        val merged = mergeCardFaculty(mergeFaculty(lists))
         db.replaceFaculty(merged)
         return merged.size
     }
@@ -164,7 +166,11 @@ class Scraper(
         val req = HttpRequest.newBuilder(URI(url)).timeout(Duration.ofSeconds(15)).header("User-Agent", USER_AGENT).GET().build()
         val res = withContext(Dispatchers.IO) { http.send(req, HttpResponse.BodyHandlers.ofString(Charsets.UTF_8)) }
         check(res.statusCode() in 200..299) { "HTTP ${res.statusCode()}" }
-        val roadmap = withManualRoadmap(parseMajorRoadmap(res.body(), r.key, r.department, url))
+        val roadmap = withManualRoadmap(
+            // 융복합전공 pages: the "교과과정" tab's tables are in the page itself
+            if ("/curriculum-info/" in url) parseConvergenceCurriculum(res.body(), r.key, r.department, url)
+            else parseMajorRoadmap(res.body(), r.key, r.department, url),
+        )
         // Neither a table nor an image means the page structure changed → don't delete the existing roadmap
         check(roadmap.entries.isNotEmpty() || roadmap.imageUrl != null) { "로드맵 표·그림을 찾지 못함" }
         db.replaceRoadmap(roadmap)
@@ -245,4 +251,19 @@ fun withManualRoadmap(parsed: kr.ac.catholic.cukmoa.model.MajorRoadmap): kr.ac.c
     val text = Scraper::class.java.classLoader.getResource("roadmaps/${parsed.major}.json")?.readText() ?: return parsed
     val manual = kr.ac.catholic.cukmoa.model.ApiJson.decodeFromString(kr.ac.catholic.cukmoa.model.MajorRoadmap.serializer(), text)
     return parsed.copy(legend = manual.legend, entries = manual.entries, note = manual.note)
+}
+
+/**
+ * A card-list professor (no faculty number) who also has a regular profile in their home department — e.g. 김유중,
+ * 주임교수 of the 융복합전공 — becomes one person: the regular profile, with the card page's board code added.
+ */
+fun mergeCardFaculty(members: List<kr.ac.catholic.cukmoa.model.FacultyMember>): List<kr.ac.catholic.cukmoa.model.FacultyMember> {
+    val (cards, regular) = members.partition { it.id.startsWith("card:") }
+    val extra = mutableMapOf<String, MutableSet<String>>()
+    val left = cards.filter { card ->
+        val home = regular.firstOrNull { r -> r.name == card.name && (card.departments.isEmpty() || card.departments.any { it in r.departments }) }
+        if (home != null) extra.getOrPut(home.id) { mutableSetOf() }.addAll(card.majors)
+        home == null
+    }
+    return regular.map { r -> extra[r.id]?.let { r.copy(majors = (r.majors + it).distinct()) } ?: r } + left
 }

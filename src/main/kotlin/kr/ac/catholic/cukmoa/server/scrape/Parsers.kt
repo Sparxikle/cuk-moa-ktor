@@ -282,3 +282,64 @@ fun parseMajorRoadmap(html: String, major: String, department: String, url: Stri
     }
     return base.copy(entries = entries.distinct())
 }
+
+private val YEAR_TERM = Regex("""([1-6])\s*-\s*([12])""")
+
+/**
+ * 융복합전공 curriculum pages (major_convergence/curriculum-info/…), the "교과과정" tab: the
+ * 학년별 과목편성 table lists each course with its year-semester ("2-1, 2-2", "2-1/4-2") and area ("GH / 경영회계").
+ * A course offered in several semesters appears once per semester. Courses marked "(고유)" in the 교육목적별 분류
+ * table get the mark "고유과목" (they count toward the major's own requirements).
+ */
+fun parseConvergenceCurriculum(html: String, major: String, department: String, url: String): kr.ac.catholic.cukmoa.model.MajorRoadmap {
+    val doc = Jsoup.parse(html, url)
+    fun courseKey(s: String) = s.replace(Regex("\\(고유\\)|\\s"), "")
+    val own = doc.select("table").firstOrNull { it.selectFirst("caption")?.text()?.contains("교육목적별") == true }
+        ?.select("td")?.map { it.text().trim() }?.filter { it.endsWith("(고유)") }?.map { courseKey(it) }?.toSet().orEmpty()
+    val table = doc.select("table").firstOrNull { it.selectFirst("caption")?.text()?.contains("학년별") == true }
+    val entries = table?.select("tr")?.mapNotNull { tr -> tr.select("td").map { it.text().trim() }.takeIf { it.size >= 5 } }
+        ?.flatMap { cells ->
+            val name = cells[2].removeSuffix("(고유)").trim()
+            if (name.isEmpty()) return@flatMap emptyList()
+            val track = cells.getOrNull(5)?.substringAfter('/', "")?.trim()?.ifEmpty { null } ?: cells.getOrNull(5).orEmpty()
+            val marks = if (courseKey(name) in own) listOf("고유과목") else emptyList()
+            YEAR_TERM.findAll(cells[4]).map { it.groupValues[1].toInt() to it.groupValues[2].toInt() }
+                .filter { (y, _) -> y in 1..4 }.distinct()
+                .map { (y, t) -> kr.ac.catholic.cukmoa.model.MajorRoadmapEntry(track, kr.ac.catholic.cukmoa.model.SemesterKey.of(y, t), name, marks) }
+                .toList()
+        }.orEmpty()
+    return kr.ac.catholic.cukmoa.model.MajorRoadmap(
+        major = major, department = department, url = url, entries = entries,
+        legend = if (own.isNotEmpty()) mapOf("고유" to "고유과목") else emptyMap(),
+    )
+}
+
+/**
+ * Professor lists drawn as cards (융복합전공 주임교수·겸임·초빙 and similar pages): each li has p.name
+ * (position in a span) and dt/dd pairs. No faculty number on these pages, so the id is made from the page and name.
+ * Phone and e-mail are left out, as on the regular faculty pages.
+ */
+fun parseCardFaculty(html: String, major: String, pageUrl: String, position: String): List<kr.ac.catholic.cukmoa.model.FacultyMember> =
+    Jsoup.parse(html, pageUrl).select("p.name").mapNotNull { nameEl ->
+        val name = nameEl.ownText().trim().ifEmpty { return@mapNotNull null }
+        // <li> card > … > div.text_cont (p.name, dl rows); div.bottom lists the degrees they teach
+        val card = nameEl.parents().firstOrNull { it.tagName() == "li" } ?: nameEl.parent() ?: return@mapNotNull null
+        val info = nameEl.parent()!!.select("> dl").filter { it.selectFirst("dt") != null }.associate { dl ->
+            val dd = dl.selectFirst("dd")
+            val items = dd?.select("li")?.map { it.text().trim() }?.filter { it.isNotEmpty() }.orEmpty()
+            dl.selectFirst("dt")!!.text().filterNot { it.isWhitespace() } to (if (items.isNotEmpty()) items.joinToString("\n") else dd?.text()?.trim().orEmpty())
+        }
+        val degrees = card.select(".bottom li").map { it.text().trim() }.filter { it.isNotEmpty() }
+        kr.ac.catholic.cukmoa.model.FacultyMember(
+            id = "card:${pageUrl.substringAfter("//").substringBefore('?')}:$name",
+            name = name,
+            position = nameEl.selectFirst("span")?.text()?.trim()?.ifEmpty { null } ?: position,
+            majors = listOf(major),
+            departments = listOfNotNull(info["소속"]?.ifEmpty { null }),
+            office = info["연구실위치"]?.ifEmpty { null },
+            field = (info["연구분야"] ?: info["전문분야"])?.replace(Regex("[\\s\u00a0]*/[\\s\u00a0]*"), ", ")?.ifEmpty { null },
+            keywords = (info["담당과목"]?.split(',', '\n') ?: degrees).map { it.trim() }.filter { it.isNotEmpty() },
+            intro = listOfNotNull(info["경력"]?.ifEmpty { null }, info["학력"]?.ifEmpty { null }).joinToString("\n\n").ifEmpty { null },
+            profileUrl = pageUrl,
+        )
+    }

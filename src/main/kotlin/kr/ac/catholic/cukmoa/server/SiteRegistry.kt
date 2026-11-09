@@ -32,6 +32,8 @@ data class SiteBoard(val code: String, val board: String, val category: String, 
 /** A roadmap page: [key] stores it (the site code, or "code/department" when several majors share one site). */
 data class SiteRoadmap(val key: String, val code: String, val department: String, val url: String)
 
+private const val CONVERGENCE = "융복합전공"
+
 // School CMS paths: https://{sub}.catholic.ac.kr/{site}/{section}/{page}.do
 private val CMS = Regex("""^https?://([A-Za-z0-9-]+)\.catholic\.ac\.kr/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)\.do$""")
 
@@ -69,13 +71,25 @@ fun boardCategory(board: String): String {
 class SiteRegistry(val entries: List<SiteEntry>) {
 
     /** Department name → its site code (only majors with at least one announcement board or professor page). */
-    val codeByDepartment: Map<String, String> = entries.mapNotNull { e ->
-        val url = e.announcements.firstOrNull() ?: e.professors.firstOrNull() ?: e.site.takeIf { it.isNotBlank() }
-        url?.let { siteCode(it) }?.let { e.department to it }
-    }.toMap()
+    val codeByDepartment: Map<String, String> = run {
+        val direct = entries.mapNotNull { e ->
+            val url = e.announcements.firstOrNull() ?: e.professors.firstOrNull() ?: e.site.takeIf { it.isNotBlank() }
+            url?.let { siteCode(it) }?.let { e.department to it }
+        }.toMap()
+        // Every 융복합전공 shares one site (notices and professors), also those entered without links or on other sites
+        val convergence = direct.filterKeys { CONVERGENCE in it }.values.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+            ?: return@run direct
+        direct + entries.filter { CONVERGENCE in it.department }.associate { it.department to convergence }
+    }
 
     /** Site code → department names on it (several majors can share one site) */
     val departmentsByCode: Map<String, List<String>> = codeByDepartment.entries.groupBy({ it.value }, { it.key })
+
+    /** Department shown for professors listed without one: the majors on the site, or "융복합전공" for the shared 융복합 site */
+    fun facultyDepartments(code: String): List<String> {
+        val names = departmentsByCode[code].orEmpty()
+        return if (names.isNotEmpty() && names.all { CONVERGENCE in it }) listOf(CONVERGENCE) else names
+    }
 
     fun entry(department: String): SiteEntry? = entries.firstOrNull { it.department == department }
 

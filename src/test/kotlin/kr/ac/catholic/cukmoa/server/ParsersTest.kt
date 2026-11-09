@@ -3,6 +3,10 @@ package kr.ac.catholic.cukmoa.server
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kr.ac.catholic.cukmoa.model.FacultyMember
+import kr.ac.catholic.cukmoa.server.scrape.mergeCardFaculty
+import kr.ac.catholic.cukmoa.server.scrape.parseCardFaculty
+import kr.ac.catholic.cukmoa.server.scrape.parseConvergenceCurriculum
 import kr.ac.catholic.cukmoa.server.scrape.RawRow
 import kr.ac.catholic.cukmoa.server.scrape.articleNo
 import kr.ac.catholic.cukmoa.server.scrape.isoDate
@@ -61,5 +65,35 @@ class ParsersTest {
         assertEquals("5866978", articleNo("https://x/notice_view_form.acl?ARTL_NUM=5866978&start=1"))
         assertEquals("https://a/b.do?mode=view", makeLink("https://a/b.do", "https://a", "?mode=view"))
         assertEquals("https://a/img.png", makeLink("https://a/b.do", "https://a", "/img.png"))
+    }
+
+    @Test
+    fun `융복합전공 curriculum tab becomes a roadmap`() {
+        val r = parseConvergenceCurriculum(fixture("convergence_global.html"), "major_convergence/글로벌인문경영융복합전공", "글로벌인문경영융복합전공", "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/global.do")
+        println(r.entries.joinToString("\n"))
+        assertTrue(r.entries.size >= 10)
+        assertTrue(r.entries.all { it.name.isNotBlank() && "(고유)" !in it.name })
+        assertTrue(r.entries.any { "고유과목" in it.marks })
+    }
+
+    @Test
+    fun `융복합전공 professor cards`() {
+        val url = "https://major-convergence.catholic.ac.kr/major_convergence/undergraduate-info/faculty.do"
+        val main = parseCardFaculty(fixture("convergence_faculty.html"), "major_convergence", url, "주임교수")
+        val adjunct = parseCardFaculty(fixture("convergence_adjunct.html"), "major_convergence", url.replace("faculty", "adjunct"), "겸임·초빙교수")
+        println((main + adjunct).joinToString("\n"))
+        assertTrue(main.isNotEmpty() && adjunct.isNotEmpty())
+        assertTrue(main.any { it.name == "김유중" })
+        assertTrue((main + adjunct).all { it.majors == listOf("major_convergence") && it.id.startsWith("card:") })
+    }
+
+    @Test
+    fun `card professors with a home profile merge into it`() {
+        val home = FacultyMember(id = "123", name = "김유중", position = "교수", majors = listOf("csie"), departments = listOf("컴퓨터정보공학부"), profileUrl = "")
+        val card = FacultyMember(id = "card:x:김유중", name = "김유중", position = "주임교수", majors = listOf("major_convergence"), departments = listOf("컴퓨터정보공학부"), profileUrl = "")
+        val other = FacultyMember(id = "card:x:홍길동", name = "홍길동", position = "주임교수", majors = listOf("major_convergence"), departments = emptyList(), profileUrl = "")
+        val merged = mergeCardFaculty(listOf(home, card, other))
+        assertEquals(listOf("123", "card:x:홍길동"), merged.map { it.id })
+        assertEquals(listOf("csie", "major_convergence"), merged[0].majors)
     }
 }
