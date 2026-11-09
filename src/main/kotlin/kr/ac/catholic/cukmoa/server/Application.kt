@@ -24,9 +24,7 @@ import kr.ac.catholic.cukmoa.model.TimetableRequest
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import java.io.File
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -303,14 +301,22 @@ fun main(args: Array<String>) {
         val jobs = JobService(db, departments, careerNetKey).also { it.refreshInBackgroundIfStale() }
         module(db, catalog, departments, TimetableService(db, catalog, gemini), jobs, sites)
         if (scrapeEnabled) launch {
-            // Full collection at startup, then new posts only every interval, and a full collection again once a day.
-            var lastFull: TimeSource.Monotonic.ValueTimeMark? = null
+            // New posts only every interval, and a full collection (every page, professors, roadmaps, calendar) once a day.
+            // The last full collection is read from the database, so a restart doesn't start another one;
+            // `--fetch` forces one at startup.
+            var lastFull: java.time.Instant? = if ("--fetch" in args) null else lastFullScrape(db)
             while (true) {
-                val mode = if (lastFull == null || lastFull.elapsedNow() >= 24.hours) Mode.Full else Mode.Incremental
+                val due = lastFull == null || java.time.Duration.between(lastFull, java.time.Instant.now()) >= java.time.Duration.ofHours(24)
+                val mode = if (due) Mode.Full else Mode.Incremental
                 scraper.runAll(mode)
-                if (mode == Mode.Full) lastFull = TimeSource.Monotonic.markNow()
+                if (mode == Mode.Full) lastFull = java.time.Instant.now()
                 delay(interval)
             }
         }
     }.start(wait = true)
 }
+
+/** When the last full collection finished: professors and the calendar are only read in full collections. */
+fun lastFullScrape(db: Database): java.time.Instant? =
+    db.scrapeRuns().filter { it.boardKey == "faculty" || it.boardKey.startsWith("calendar/") }
+        .mapNotNull { r -> r.lastOk?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() } }.maxOrNull()

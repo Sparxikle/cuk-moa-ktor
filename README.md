@@ -2,7 +2,7 @@
 
 API server and school information collector for the [가대모아 app](https://github.com/Sparxikle/cuk-moa-kmp). Kotlin + Ktor 3, SQLite.
 
-- **Automatically collects this year's announcements** from school notices, LMS, events, external contests and every department board listed in the site registry (`sites/department-sites.json`, edited with `tools/department-sites.py`).
+- **Automatically collects the last 12 months of announcements** from school notices, LMS, events, external contests and every department board listed in the site registry (`sites/department-sites.json`, edited with `tools/department-sites.py`).
   Full scrape on startup, new posts only every 30 minutes, and a full rescrape once a day (refreshes view counts and pinned status).
 - Provides the school's **academic calendar** (per academic year) and the **full list of school departments** from the Public Data Portal (data.go.kr).
 - Collects **professor profiles** and **official major roadmaps** from the professor and roadmap pages in the same registry. Pages in a layout the parsers don't read are skipped and logged.
@@ -26,6 +26,7 @@ The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, ad
 ./gradlew run                      # API on :8080 + announcement collection
 ./gradlew run --args="--once"      # One full scrape, then exit (about 1 min 30 s; 1,997 posts as of 2026-10-25)
 ./gradlew run --args="--once --incremental"   # Scrape new posts only, then exit
+./gradlew run --args="--fetch"     # Serve, and start with a full scrape even if the last one is under 24 h old
 ```
 
 | Environment variable | Default | |

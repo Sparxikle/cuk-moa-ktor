@@ -4,6 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kr.ac.catholic.cukmoa.model.FacultyMember
+import kr.ac.catholic.cukmoa.model.SemesterKey
+import kr.ac.catholic.cukmoa.server.scrape.parseFaculty
+import kr.ac.catholic.cukmoa.server.scrape.parseMajorRoadmap
+import kr.ac.catholic.cukmoa.server.scrape.roadmapLinks
 import kr.ac.catholic.cukmoa.server.scrape.mergeCardFaculty
 import kr.ac.catholic.cukmoa.server.scrape.parseCardFaculty
 import kr.ac.catholic.cukmoa.server.scrape.parseConvergenceCurriculum
@@ -95,5 +99,66 @@ class ParsersTest {
         val merged = mergeCardFaculty(listOf(home, card, other))
         assertEquals(listOf("123", "card:x:홍길동"), merged.map { it.id })
         assertEquals(listOf("csie", "major_convergence"), merged[0].majors)
+    }
+
+    private fun roadmap(name: String) = parseMajorRoadmap(fixture("roadmap_$name.html"), name, name, "https://$name.catholic.ac.kr/$name/course/roadmap.do")
+
+    @Test
+    fun `roadmaps with year-only headers, two header rows, no header or td headers`() {
+        val ble = roadmap("ble")
+        assertTrue(ble.entries.any { it.year == 1 && it.semester == null && it.name == "바이오로직스공학개론" && it.track == "공통이수과목" && it.marks.isNotEmpty() })
+        val philosophy = roadmap("philosophy")
+        assertTrue(philosophy.entries.any { it.semester == SemesterKey.S2_1 && it.name == "논리학" && it.track == "기초" })
+        // No header row: td class roadmap01…04, two columns per year
+        val design = roadmap("design")
+        assertTrue(design.entries.any { it.semester == SemesterKey.S4_2 && it.name == "소비자학 캡스톤디자인" })
+        val fn = roadmap("fn")
+        assertTrue(fn.entries.any { it.semester == SemesterKey.S4_1 && it.name == "임상영양학" })
+        val voice = roadmap("voice")
+        assertTrue(voice.entries.any { it.semester == SemesterKey.S4_2 && it.name == "졸업연주" })
+        listOf("business", "children", "med1", "med2").forEach { assertTrue(roadmap(it).entries.size >= 20, it) }
+    }
+
+    @Test
+    fun `music roadmap has semesters as rows and majors as columns`() {
+        val music = roadmap("music")
+        assertTrue(music.entries.any { it.semester == SemesterKey.S1_1 && it.track == "공통" && it.name == "시창1" })
+        assertTrue(music.entries.any { it.semester == SemesterKey.S4_1 && it.track == "작곡" && it.name == "재즈화성" })
+        assertTrue(music.entries.none { it.track == "비고" })
+    }
+
+    @Test
+    fun `nursing curriculum skips credits and credit totals`() {
+        val nursing = roadmap("nursing")
+        assertTrue(nursing.entries.any { it.semester == SemesterKey.S1_1 && it.name == "생물학" && it.track == "교양필수" })
+        assertTrue(nursing.entries.none { it.name.all { c -> c.isDigit() || c == '.' } })
+    }
+
+    @Test
+    fun `six-year pharmacy table falls back to the curriculum image, 자유전공 only links`() {
+        val pharmacy = roadmap("pharmacy")
+        assertTrue(pharmacy.entries.isEmpty())
+        assertEquals("https://pharmacy.catholic.ac.kr/_res/cuk/pharmacy/img/content/curriculum.jpg", pharmacy.imageUrl)
+        assertTrue(roadmap("liberal").entries.isEmpty())
+        assertTrue(roadmapLinks(fixture("roadmap_liberal.html"), "https://liberal.catholic.ac.kr/liberal/course/roadmap.do").size > 30)
+    }
+
+    @Test
+    fun `faculty pages without faculty numbers use the article number or the name`() {
+        val voice = parseFaculty(fixture("faculty_voice.html"), "voice", "https://voice.catholic.ac.kr/voice/faculty/faculty.do")
+        val head = voice.first { it.name == "이재완" }
+        assertEquals("art:voice.catholic.ac.kr/voice/faculty/faculty.do:271044", head.id)
+        assertEquals("https://voice.catholic.ac.kr/voice/faculty/faculty.do?mode=view&articleNo=271044", head.profileUrl)
+        assertEquals(7, voice.size)
+        val nursing = parseFaculty(fixture("faculty_nursing.html"), "nursing", "https://nursing.catholic.ac.kr/nursing/research/DCN2.do")
+        assertEquals(7, nursing.size)
+        assertTrue(nursing.all { it.id.startsWith("page:") && it.profileUrl == "https://nursing.catholic.ac.kr/nursing/research/DCN2.do" })
+    }
+
+    @Test
+    fun `융복합전공 curriculum with columns in another order`() {
+        val r = parseConvergenceCurriculum(fixture("convergence_big_data.html"), "major_convergence/빅데이터인문경영융복합전공", "빅데이터인문경영융복합전공", "https://major-convergence.catholic.ac.kr/major_convergence/curriculum-info/big_data.do")
+        assertTrue(r.entries.size >= 30)
+        assertTrue(r.entries.any { it.name == "빅데이터분석의기초" && it.semester == SemesterKey.S2_2 && it.track == "융복합전공" })
     }
 }

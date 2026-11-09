@@ -644,7 +644,7 @@
       "https://children.catholic.ac.kr/children/faculty/faculty.do"
     ],
     "announcements": [
-      "https://children.catholic.ac.kr/children/faculty/faculty.do",
+      "https://children.catholic.ac.kr/children/community/notice.do",
       "https://children.catholic.ac.kr/children/community/recruitment.do",
       "https://children.catholic.ac.kr/children/community/news.do"
     ]
@@ -936,7 +936,7 @@
     "campus": "성의",
     "college": "간호대학",
     "site": "https://nursing.catholic.ac.kr/nursing/index.do",
-    "roadmap": "https://nursing.catholic.ac.kr/nursing/sutdent-life/class_schedule.do",
+    "roadmap": "https://nursing.catholic.ac.kr/nursing/sutdent-life/curriculum_grade.do",
     "graduation": "https://nursing.catholic.ac.kr/nursing/sutdent-life/academic_policy.do",
     "professors": [
       "https://nursing.catholic.ac.kr/nursing/research/DCN2.do",
@@ -989,7 +989,7 @@
     "college": "신학대학",
     "site": "https://songsin.catholic.ac.kr/ko/academics/theology.do",
     "roadmap": "",
-    "graduation": "",
+    "graduation": "https://songsin.catholic.ac.kr/ko/academics/program_degree.do",
     "professors": [
       "https://songsin.catholic.ac.kr/ko/academics/faculty.do"
     ],

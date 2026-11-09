@@ -17,10 +17,11 @@ import kr.ac.catholic.cukmoa.server.db.Database
 import kr.ac.catholic.cukmoa.server.db.ScrapedItem
 import org.slf4j.LoggerFactory
 
-// Pages through each board from the newest post, collecting only this year's posts. Hitting an unpinned post from last year stops that board.
+// Pages through each board from the newest post, collecting the last 12 months. Hitting an older unpinned post stops that board.
+// (A rolling window rather than the calendar year, so January doesn't start with empty boards.)
 
 enum class Mode {
-    /** Re-reads this year's posts to the end (refreshes view counts and pinned status). At startup and once a day. */
+    /** Re-reads the last 12 months of posts to the end (refreshes view counts and pinned status). Once a day. */
     Full,
 
     /** Stops when a whole page is already known. Every 30 minutes. */
@@ -101,7 +102,7 @@ class Scraper(
         for (b in boards(registry)) {
             val result = runCatching {
                 val known = if (mode == Mode.Incremental) db.knownArticles(b.source, b.major, b.board) else emptySet()
-                val items = scrapeBoard(b, year, known)
+                val items = scrapeBoard(b, year, known, since = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDate().minusYears(1).toString())
                 db.upsert(items)
                 items.size
             }
@@ -171,6 +172,11 @@ class Scraper(
             if ("/curriculum-info/" in url) parseConvergenceCurriculum(res.body(), r.key, r.department, url)
             else parseMajorRoadmap(res.body(), r.key, r.department, url),
         )
+        // 자유전공학부: the page only links to the other departments' roadmaps, which are collected on their own
+        if (roadmap.entries.isEmpty() && roadmap.imageUrl == null && roadmapLinks(res.body(), url).size >= 3) {
+            log.info("roadmap {} links to other departments' roadmaps, nothing to store", r.key)
+            return 0
+        }
         // Neither a table nor an image means the page structure changed → don't delete the existing roadmap
         check(roadmap.entries.isNotEmpty() || roadmap.imageUrl != null) { "로드맵 표·그림을 찾지 못함" }
         db.replaceRoadmap(roadmap)
@@ -196,7 +202,8 @@ class Scraper(
         return res.body()
     }
 
-    suspend fun scrapeBoard(b: Board, year: Int, known: Set<String>): List<ScrapedItem> {
+    /** [year] is for lists that leave it out ("10.16"); posts dated before [since] (ISO date) end the board. */
+    suspend fun scrapeBoard(b: Board, year: Int, known: Set<String>, since: String = "$year-01-01"): List<ScrapedItem> {
         val results = mutableListOf<ScrapedItem>()
         val seen = mutableSetOf<String>()
         pages@ for (page in 0 until b.maxPages) {
@@ -212,13 +219,13 @@ class Scraper(
                 if (!seen.add(no)) continue // Pinned posts reappear on every page
                 newOnPage++
 
-                val rowYear = row.date.take(4).toIntOrNull() ?: 0
-                if (rowYear < year && !row.pinned) break@pages
+                val recent = row.date >= since
+                if (!recent && !row.pinned) break@pages
                 if (!row.pinned) {
                     unpinned++
                     if (no in known) unpinnedKnown++
                 }
-                if (rowYear == year) results += ScrapedItem(
+                if (recent) results += ScrapedItem(
                     source = b.source,
                     board = b.board,
                     major = b.major,
@@ -254,11 +261,12 @@ fun withManualRoadmap(parsed: kr.ac.catholic.cukmoa.model.MajorRoadmap): kr.ac.c
 }
 
 /**
- * A card-list professor (no faculty number) who also has a regular profile in their home department — e.g. 김유중,
+ * A professor without a faculty number (card lists, adjunct pages …) who also has a regular profile in their home department — e.g. 김유중,
  * 주임교수 of the 융복합전공 — becomes one person: the regular profile, with the card page's board code added.
  */
 fun mergeCardFaculty(members: List<kr.ac.catholic.cukmoa.model.FacultyMember>): List<kr.ac.catholic.cukmoa.model.FacultyMember> {
-    val (cards, regular) = members.partition { it.id.startsWith("card:") }
+    // Ids with a ':' come from pages without a faculty number (card lists, article numbers, name only)
+    val (cards, regular) = members.partition { ':' in it.id }
     val extra = mutableMapOf<String, MutableSet<String>>()
     val left = cards.filter { card ->
         val home = regular.firstOrNull { r -> r.name == card.name && (card.departments.isEmpty() || card.departments.any { it in r.departments }) }

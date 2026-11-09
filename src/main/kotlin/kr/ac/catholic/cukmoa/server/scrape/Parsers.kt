@@ -186,7 +186,9 @@ fun parseFaculty(html: String, major: String, pageUrl: String): List<kr.ac.catho
         val box = li.selectFirst(".b-prof-con-box") ?: return@mapNotNull null
         val name = box.selectFirst(".b-name")?.clean()?.ifEmpty { null } ?: return@mapNotNull null
         val persNo = li.selectFirst("a[href*=persNo]")?.attr("href")?.substringAfter("persNo=")?.substringBefore("&")
-            ?: return@mapNotNull null
+        // Pages for adjunct, hospital or music teachers have an article number instead, some (의대, 간호대) nothing
+        val articleNo = li.selectFirst("[data-article-no]")?.attr("data-article-no")?.ifEmpty { null }
+        val page = pageUrl.substringAfter("//").substringBefore('?')
         val info = box.select(".b-info-box li").associate { item ->
             val label = item.selectFirst("span")?.clean().orEmpty()
             val p = item.selectFirst("p")
@@ -194,7 +196,7 @@ fun parseFaculty(html: String, major: String, pageUrl: String): List<kr.ac.catho
             label to (if (spans.isNotEmpty()) spans.joinToString("\u0000") else p?.clean().orEmpty())
         }
         kr.ac.catholic.cukmoa.model.FacultyMember(
-            id = persNo,
+            id = persNo ?: articleNo?.let { "art:$page:$it" } ?: "page:$page:$name",
             name = name,
             nameEn = box.selectFirst(".b-name-en")?.clean()?.ifEmpty { null },
             position = box.select("p.b-name-ko > span").firstOrNull { !it.hasClass("b-name") }?.clean().orEmpty(),
@@ -206,7 +208,11 @@ fun parseFaculty(html: String, major: String, pageUrl: String): List<kr.ac.catho
             field = info["연구분야"]?.split(Regex("\\s{2,}")).orEmpty().joinToString(", ").ifEmpty { null },
             keywords = info["연구키워드"]?.split('\u0000')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
             intro = box.selectFirst("pre.introKoList")?.text()?.trim()?.ifEmpty { null },
-            profileUrl = "$pageUrl?mode=view&persNo=$persNo",
+            profileUrl = when {
+                persNo != null -> "$pageUrl?mode=view&persNo=$persNo"
+                articleNo != null -> "$pageUrl?mode=view&articleNo=$articleNo"
+                else -> pageUrl
+            },
         )
     }
 
@@ -235,8 +241,10 @@ fun parseMajorRoadmap(html: String, major: String, department: String, url: Stri
         key to li.ownText().trim()
     }.toMap()
     val base = kr.ac.catholic.cukmoa.model.MajorRoadmap(major = major, department = department, url = url, legend = legend)
-    val table = content.selectFirst("table.cuk-table")
-        ?: return base.copy(imageUrl = content.selectFirst("img[src]")?.absUrl("src")?.ifEmpty { null })
+    val image = { base.copy(imageUrl = content.selectFirst("img[src]")?.absUrl("src")?.ifEmpty { null }) }
+    // Other layouts (headers over two rows, years without semesters, no header row, semesters as rows …)
+    val other = { content.select("table").firstNotNullOfOrNull { gridRoadmap(it, legend) }?.let { base.copy(entries = it) } ?: image() }
+    val table = content.selectFirst("table.cuk-table") ?: return other()
 
     // Header row: column number → semester (the first column is the track name)
     val semesterByCol = mutableMapOf<Int, kr.ac.catholic.cukmoa.model.SemesterKey>()
@@ -280,7 +288,138 @@ fun parseMajorRoadmap(html: String, major: String, department: String, url: Stri
             c += cs
         }
     }
-    return base.copy(entries = entries.distinct())
+    return if (entries.isEmpty()) other() else base.copy(entries = entries.distinct())
+}
+
+private val YEAR_RE = Regex("""([1-9])\s*학년""")
+private val TERM_RE = Regex("""([12])\s*학기""")
+
+/** Year and term named in a header ("2-1학기", "3학년", "1학기", "의학과 2학년"); null when it names neither */
+private fun periodOf(text: String): Pair<Int?, Int?>? {
+    SEMESTER_RE.find(text)?.let { return it.groupValues[1].toInt() to it.groupValues[2].toInt() }
+    val year = YEAR_RE.find(text)?.groupValues?.get(1)?.toInt()
+    val term = TERM_RE.find(text)?.groupValues?.get(1)?.toInt()
+    return if (year == null && term == null) null else year to term
+}
+
+/** Course names in a cell: list items, "•" lines, or the whole cell. Credits "(3/3)", "(필2)" and notes "*…" are dropped. */
+private fun cellCourses(cell: org.jsoup.nodes.Element, legend: Map<String, String>): List<Pair<String, List<String>>> {
+    fun clean(raw: String) = raw.replace('\u00a0', ' ').replace(Regex("\\s+"), " ").trim()
+        .replace(Regex("\\s\\*.*$"), "")
+        .replace(Regex("<[^>]*>"), "")
+        .replace(Regex("\\s*\\([^()]*\\d[^()]*\\).*$"), "")
+        .removePrefix("•").trim()
+    fun names(text: String) =
+        (if (Regex("""\(\d+/\d+""").containsMatchIn(text)) text.split(Regex(",\\s*")) else listOf(text))
+            .map(::clean).filter { it.any(Char::isLetter) }
+    val items = cell.select("li")
+    if (items.isNotEmpty()) return items.flatMap { li ->
+        val marks = li.select("span.subject").map { it.text().trim().let { k -> legend[k] ?: k } }
+        val copy = li.clone()
+        copy.select("span.subject").remove()
+        copy.select("br").forEach { it.replaceWith(org.jsoup.nodes.TextNode("")) }
+        names(copy.text()).map { it to marks }
+    }
+    val lines = cell.html().split(Regex("<br\\s*/?>")).map { Jsoup.parse(it).text().trim() }.filter { it.isNotEmpty() }
+    return if (lines.count { it.startsWith("•") } >= 2) lines.filter { it.startsWith("•") }.flatMap { names(it) }.map { it to emptyList() }
+    else names(lines.joinToString("")).map { it to emptyList() }
+}
+
+/**
+ * Roadmap tables the classic layout doesn't cover. Cells are spread onto a grid (rowspan/colspan), then:
+ * - columns get a period from the header rows above them (any number of rows; "1학년" alone = year only),
+ *   or from td classes roadmap01…04 when there is no header row (two columns of one year = its two semesters);
+ * - columns without a period are track labels;
+ * - with no period in any column, rows carry the period ("1-1학기") and the column headers name the tracks (음악과).
+ * Only years 1–4; a table running past 4학년 (약학 6년제) gives null so the page image is used instead.
+ */
+internal fun gridRoadmap(table: org.jsoup.nodes.Element, legend: Map<String, String>): List<kr.ac.catholic.cukmoa.model.MajorRoadmapEntry>? {
+    val rows = table.select("tr").filter { it.parents().firstOrNull { p -> p.tagName() == "table" } == table }
+    val grid = mutableMapOf<Pair<Int, Int>, org.jsoup.nodes.Element>()
+    val origin = mutableListOf<Triple<Int, Int, org.jsoup.nodes.Element>>()
+    rows.forEachIndexed { r, tr ->
+        var c = 0
+        for (cell in tr.children().filter { it.tagName() == "td" || it.tagName() == "th" }) {
+            while ((r to c) in grid) c++
+            val rs = cell.attr("rowspan").toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val cs = cell.attr("colspan").toIntOrNull()?.coerceAtLeast(1) ?: 1
+            for (dr in 0 until rs) for (dc in 0 until cs) grid[(r + dr) to (c + dc)] = cell
+            origin += Triple(r, c, cell)
+            c += cs
+        }
+    }
+    val width = (grid.keys.maxOfOrNull { it.second } ?: return null) + 1
+    fun text(e: org.jsoup.nodes.Element) = e.text().replace('\u00a0', ' ').trim()
+
+    // Header rows: leading rows of th only, or without lists and with ≥ 2 period cells (성악과's td header)
+    val headerRows = rows.indices.takeWhile { r ->
+        val cells = rows[r].children()
+        cells.all { it.tagName() == "th" } && rows[r].select("li").isEmpty() ||
+            rows[r].select("li").isEmpty() && cells.count { periodOf(text(it)) != null } >= 2
+    }
+    val colPeriod = (0 until width).associateWith { c ->
+        var year: Int? = null
+        var term: Int? = null
+        for (r in headerRows) grid[r to c]?.let { periodOf(text(it)) }?.let { (y, t) -> if (y != null) year = y; if (t != null) term = t }
+        year?.let { it to term }
+    }.filterValues { it != null }.mapValues { it.value!! }.toMutableMap()
+    if (headerRows.isEmpty()) {
+        // No header row: td class "roadmap0Y" gives the year
+        val yearOf = (0 until width).associateWith { c ->
+            origin.firstOrNull { (_, oc, e) -> oc == c && e.tagName() == "td" }?.third?.className()
+                ?.let { Regex("""roadmap0([1-4])""").find(it)?.groupValues?.get(1)?.toInt() }
+        }.filterValues { it != null }.mapValues { it.value!! }
+        yearOf.values.distinct().forEach { y ->
+            val cols = yearOf.filterValues { it == y }.keys.sorted()
+            cols.forEachIndexed { i, c -> colPeriod[c] = y to (if (cols.size == 2) i + 1 else null) }
+        }
+    }
+    val allYears = colPeriod.values.map { it.first }
+    if (allYears.any { it > 4 }) return null
+
+    fun entry(track: String, year: Int, term: Int?, name: String, marks: List<String>) =
+        if (term != null) kr.ac.catholic.cukmoa.model.MajorRoadmapEntry(track, kr.ac.catholic.cukmoa.model.SemesterKey.of(year, term), name, marks)
+        else kr.ac.catholic.cukmoa.model.MajorRoadmapEntry(track, null, name, marks, year = year)
+
+    val entries = mutableListOf<kr.ac.catholic.cukmoa.model.MajorRoadmapEntry>()
+    val dataRows = rows.indices.filter { it !in headerRows }
+    if (colPeriod.isNotEmpty()) {
+        val labelCols = (0 until width).filter { it !in colPeriod }
+        for ((r, c, cell) in origin) {
+            if (r in headerRows || c in labelCols) continue
+            val track = labelCols.mapNotNull { grid[r to it] }.distinct().map { text(it) }.filter { it.isNotEmpty() }.joinToString(" · ")
+            if ("학점" in track) continue // credit totals row
+            val span = cell.attr("colspan").toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val periods = (c until c + span).mapNotNull { colPeriod[it] }.distinct()
+            for ((name, marks) in cellCourses(cell, legend)) for ((y, t) in periods) entries += entry(track, y, t, name, marks)
+        }
+    } else {
+        // Semesters as rows: the row's "1-1학기" cell; tracks from the column headers ("성악(66학점)" → "성악")
+        val trackOf = (0 until width).associateWith { c ->
+            headerRows.mapNotNull { grid[it to c] }.lastOrNull()?.let { text(it).replace(Regex("\\([^)]*\\)"), "").trim() }.orEmpty()
+        }
+        val rowPeriod = dataRows.associateWith { r ->
+            (0 until width).mapNotNull { grid[r to it] }.distinct().firstNotNullOfOrNull { e -> SEMESTER_RE.find(text(e))?.let { it.groupValues[1].toInt() to it.groupValues[2].toInt() } }
+        }
+        if (rowPeriod.values.all { it == null } || rowPeriod.values.any { it != null && it.first > 4 }) return null
+        for ((r, c, cell) in origin) {
+            val (y, t) = rowPeriod[r] ?: continue
+            if (periodOf(text(cell)) != null || cell.tagName() == "th") continue
+            val span = cell.attr("colspan").toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val tracks = (c until c + span).map { trackOf[it].orEmpty() }.filter { it.isNotEmpty() }.distinct()
+            if (tracks.any { it == "비고" }) continue
+            val track = if (tracks.size == 1) tracks.single() else "공통"
+            for ((name, marks) in cellCourses(cell, legend)) entries += entry(track, y, t, name, marks)
+        }
+    }
+    return entries.distinct().takeIf { it.size >= 3 }
+}
+
+/** Pages that only link to other departments' roadmaps (자유전공학부): those links, else empty */
+fun roadmapLinks(html: String, url: String): List<String> {
+    val host = runCatching { java.net.URI(url).host }.getOrNull()
+    return Jsoup.parse(html, url).select("#cms-content a[href*=roadmap], table a[href*=roadmap]").map { it.absUrl("href") }
+        .filter { runCatching { java.net.URI(it).host }.getOrNull().let { h -> h != null && h != host } }.distinct()
 }
 
 private val YEAR_TERM = Regex("""([1-6])\s*-\s*([12])""")
@@ -297,13 +436,20 @@ fun parseConvergenceCurriculum(html: String, major: String, department: String, 
     val own = doc.select("table").firstOrNull { it.selectFirst("caption")?.text()?.contains("교육목적별") == true }
         ?.select("td")?.map { it.text().trim() }?.filter { it.endsWith("(고유)") }?.map { courseKey(it) }?.toSet().orEmpty()
     val table = doc.select("table").firstOrNull { it.selectFirst("caption")?.text()?.contains("학년별") == true }
+    // Column order differs per major: find columns by header
+    // (이수구분|과목번호|교과목명|시간/학점|이수학년/학기|비고(전공/영역) or 이수시기|교과목명|교과목번호|시간/학점|이수구분|개설전공|비고)
+    val headers = table?.select("tr")?.firstOrNull { it.select("th").size >= 5 }?.select("th")?.map { it.text().filterNot(Char::isWhitespace) }.orEmpty()
+    fun col(fallback: Int, match: (String) -> Boolean) = headers.indexOfFirst(match).takeIf { it >= 0 } ?: fallback
+    val nameCol = col(2) { "교과목명" in it }
+    val periodCol = col(4) { "이수" in it && ("학기" in it || "시기" in it) }
+    val trackCol = col(5) { "개설전공" in it || "비고(전공" in it }
     val entries = table?.select("tr")?.mapNotNull { tr -> tr.select("td").map { it.text().trim() }.takeIf { it.size >= 5 } }
         ?.flatMap { cells ->
-            val name = cells[2].removeSuffix("(고유)").trim()
+            val name = cells.getOrNull(nameCol).orEmpty().removeSuffix("(고유)").trim()
             if (name.isEmpty()) return@flatMap emptyList()
-            val track = cells.getOrNull(5)?.substringAfter('/', "")?.trim()?.ifEmpty { null } ?: cells.getOrNull(5).orEmpty()
+            val track = cells.getOrNull(trackCol)?.substringAfter('/', "")?.trim()?.ifEmpty { null } ?: cells.getOrNull(trackCol).orEmpty()
             val marks = if (courseKey(name) in own) listOf("고유과목") else emptyList()
-            YEAR_TERM.findAll(cells[4]).map { it.groupValues[1].toInt() to it.groupValues[2].toInt() }
+            YEAR_TERM.findAll(cells.getOrNull(periodCol).orEmpty()).map { it.groupValues[1].toInt() to it.groupValues[2].toInt() }
                 .filter { (y, _) -> y in 1..4 }.distinct()
                 .map { (y, t) -> kr.ac.catholic.cukmoa.model.MajorRoadmapEntry(track, kr.ac.catholic.cukmoa.model.SemesterKey.of(y, t), name, marks) }
                 .toList()
