@@ -1,28 +1,11 @@
 package kr.ac.catholic.cukmoa.server
 
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 import kr.ac.catholic.cukmoa.logic.WEEKDAYS
 import kr.ac.catholic.cukmoa.logic.courseFor
 import kr.ac.catholic.cukmoa.logic.creditSummary
@@ -48,6 +31,16 @@ import kr.ac.catholic.cukmoa.model.TimetableRequest
 import kr.ac.catholic.cukmoa.model.TimetableResponse
 import kr.ac.catholic.cukmoa.server.db.Database
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.core.exception.SdkException
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient
+import software.amazon.awssdk.services.bedrockruntime.model.AccessDeniedException
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock
+import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest
+import software.amazon.awssdk.services.bedrockruntime.model.Message
+import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock
+import software.amazon.awssdk.services.bedrockruntime.model.ThrottlingException
 
 // AI timetable maker (POST /api/v1/timetables).
 // The server picks candidate classes, asks the AI for 3 timetables, checks every one with timetableProblems,
@@ -72,7 +65,7 @@ internal data class AiPlans(val plans: List<TimetablePlan> = emptyList())
 
 private const val PLANS = 3
 /** Asked per round: a small model gets some wrong, so more drafts leave enough valid ones to pick from */
-private const val DRAFTS = 5
+private const val DRAFTS = 3
 private const val MAX_AI_CALLS = 3
 /** "월8~9,수5~6" style time mentions in a reason */
 private val TIME_TEXT = Regex("[월화수목금토]\\d+(~\\d+)?(\\s*,\\s*[월화수목금토]?\\d+(~\\d+)?)*\\s*(교시)?")
@@ -313,7 +306,7 @@ class TimetableService(
     private companion object {
         val LIBERAL = setOf("기초교양필수", "중핵교양필수", "자유선택교양")
         val SYSTEM = """
-            너는 가톨릭대학교 학생의 수강 시간표를 짜 주는 도우미야. 아래 학생 정보와 개설과목 목록만 보고 서로 다른 시간표 5개를 만들어.
+            너는 가톨릭대학교 학생의 수강 시간표를 짜 주는 도우미야. 아래 학생 정보와 개설과목 목록만 보고 서로 다른 시간표 ${DRAFTS}개를 만들어.
             규칙 (반드시 지켜):
             - 목록에 있는 학수번호와 분반번호만 그대로 써. 같은 과목은 한 번만.
             - 수업 시간이 서로 겹치면 안 돼. 공강 요일에는 수업을 넣지 마.
@@ -331,87 +324,69 @@ class TimetableService(
     }
 }
 
-/** Gemini (Google AI Studio) generateContent with a JSON response schema. Key stays on the server. */
-class GeminiTimetableAi(private val apiKey: String, private val model: String) : TimetableAi {
-    private val log = LoggerFactory.getLogger(GeminiTimetableAi::class.java)
-    private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
+/**
+ * Amazon Bedrock (Converse API). Auth: a Bedrock API key in AWS_BEARER_TOKEN_BEDROCK if set,
+ * otherwise the SDK's default provider chain (EC2 instance role). Converse has no response schema, so the shape is
+ * spelled out in the system prompt and the JSON object is cut out of the reply.
+ */
+class BedrockTimetableAi(
+    private val modelId: String,
+    region: String = "ap-northeast-2",
+) : TimetableAi {
+    private val log = LoggerFactory.getLogger(BedrockTimetableAi::class.java)
+    private val client = BedrockRuntimeClient.builder()
+        .region(Region.of(region))
+        .overrideConfiguration { it.apiCallTimeout(Duration.ofSeconds(90)) }
+        .build()
 
     override fun generate(system: String, turns: List<AiTurn>): String {
-        val req = HttpRequest.newBuilder(URI("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"))
-            .timeout(Duration.ofSeconds(90))
-            .header("Content-Type", "application/json")
-            .header("x-goog-api-key", apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(geminiRequest(system, turns).toString()))
+        val req = ConverseRequest.builder()
+            .modelId(modelId)
+            .system(SystemContentBlock.fromText(system + JSON_ONLY))
+            .messages(
+                turns.map { t ->
+                    Message.builder()
+                        .role(if (t.role == "model") ConversationRole.ASSISTANT else ConversationRole.USER)
+                        .content(ContentBlock.fromText(t.text))
+                        .build()
+                },
+            )
+            .inferenceConfig { it.temperature(0.7f).maxTokens(4096) }
             .build()
-        val res = http.send(req, HttpResponse.BodyHandlers.ofString())
-        when (res.statusCode()) {
-            200 -> Unit
-            429 -> throw TooManyRequests("AI 사용량이 많아 잠시 쉬고 있어요. 1분 뒤에 다시 해 주세요.")
-            else -> {
-                log.warn("Gemini HTTP {}: {}", res.statusCode(), res.body().take(300))
-                throw ServiceUnavailable("AI 서버에 연결하지 못했어요 (${res.statusCode()}).")
-            }
+
+        val res = try {
+            client.converse(req)
+        } catch (e: ThrottlingException) {
+            throw TooManyRequests("AI 사용량이 많아 잠시 쉬고 있어요. 1분 뒤에 다시 해 주세요.")
+        } catch (e: AccessDeniedException) {
+            log.warn("Bedrock access denied: {}", e.message)
+            throw ServiceUnavailable("AI 시간표 기능을 지금 쓸 수 없어요.")
+        } catch (e: SdkException) {
+            // Network errors, timeouts, validation errors (e.g. wrong model ID)
+            log.warn("Bedrock call failed: {}", e.message)
+            throw ServiceUnavailable("AI 서버에 연결하지 못했어요.")
         }
-        return geminiText(res.body()).also { log.info("Gemini usage: {}", geminiUsage(res.body())) }
+
+        res.usage()?.let { log.info("Bedrock usage: in={} out={}", it.inputTokens(), it.outputTokens()) }
+        val text = res.output().message().content().mapNotNull { it.text() }.joinToString("")
+        return jsonObjectIn(text)
+    }
+
+    private companion object {
+        val JSON_ONLY = """
+
+            출력은 JSON 객체 하나만 써. 마크다운, 코드블록, 설명 없이 아래 형식 그대로:
+            {"plans":[{"title":"...","summary":"...","items":[{"subjectNo":"...","classNo":"...","reason":"..."}]}]}
+        """.trimIndent()
     }
 }
 
-/** generateContent request body: system instruction, turns, JSON output following the plans schema. */
-internal fun geminiRequest(system: String, turns: List<AiTurn>): JsonObject = buildJsonObject {
-    putJsonObject("systemInstruction") { putJsonArray("parts") { addJsonObject { put("text", system) } } }
-    putJsonArray("contents") {
-        turns.forEach { t ->
-            addJsonObject {
-                put("role", t.role)
-                putJsonArray("parts") { addJsonObject { put("text", t.text) } }
-            }
-        }
-    }
-    putJsonObject("generationConfig") {
-        put("responseMimeType", "application/json")
-        put("temperature", 0.7)
-        put("responseSchema", PLANS_SCHEMA)
-    }
+/**
+ * The outermost {...} in the reply. If there is none, the text is returned as-is so the caller's
+ * decode fails softly and the problem goes back to the AI in the next round.
+ */
+internal fun jsonObjectIn(text: String): String {
+    val start = text.indexOf('{')
+    val end = text.lastIndexOf('}')
+    return if (start >= 0 && end > start) text.substring(start, end + 1) else text
 }
-
-private val PLANS_SCHEMA: JsonObject = buildJsonObject {
-    fun str() = buildJsonObject { put("type", "STRING") }
-    put("type", "OBJECT")
-    putJsonObject("properties") {
-        putJsonObject("plans") {
-            put("type", "ARRAY")
-            putJsonObject("items") {
-                put("type", "OBJECT")
-                putJsonObject("properties") {
-                    put("title", str())
-                    put("summary", str())
-                    putJsonObject("items") {
-                        put("type", "ARRAY")
-                        putJsonObject("items") {
-                            put("type", "OBJECT")
-                            putJsonObject("properties") {
-                                put("subjectNo", str())
-                                put("classNo", str())
-                                put("reason", str())
-                            }
-                            putJsonArray("required") { add("subjectNo"); add("classNo"); add("reason") }
-                        }
-                    }
-                }
-                putJsonArray("required") { add("title"); add("summary"); add("items") }
-            }
-        }
-    }
-    putJsonArray("required") { add("plans") }
-}
-
-/** Text of the first candidate (the JSON the schema asked for). */
-internal fun geminiText(body: String): String {
-    val root = Json.parseToJsonElement(body).jsonObject
-    val parts = root["candidates"]?.jsonArray?.firstOrNull()?.jsonObject?.get("content")?.jsonObject?.get("parts") as? JsonArray
-        ?: throw ServiceUnavailable("AI가 답을 주지 않았어요. 다시 해 주세요.")
-    return parts.mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.contentOrNull }.joinToString("")
-}
-
-private fun geminiUsage(body: String): String =
-    runCatching { Json.parseToJsonElement(body).jsonObject["usageMetadata"].toString() }.getOrDefault("?")

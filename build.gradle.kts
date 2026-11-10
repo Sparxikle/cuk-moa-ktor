@@ -31,6 +31,7 @@ dependencies {
     compileOnly(libs.jspecify) // jsoup's null annotations
     implementation(libs.sqlite.jdbc)
     implementation(libs.logback.classic)
+    implementation(libs.aws.bedrockruntime)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)

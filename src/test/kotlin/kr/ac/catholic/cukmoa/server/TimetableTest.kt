@@ -181,13 +181,8 @@ class TimetableTest {
     }
 
     @Test
-    fun `gemini request and response shapes`() {
-        val body = geminiRequest("sys", listOf(AiTurn("user", "hi"), AiTurn("model", "{}"), AiTurn("user", "fix")))
-        assertEquals("sys", body["systemInstruction"].toString().substringAfter("\"text\":\"").substringBefore("\""))
-        assertTrue(body["contents"].toString().contains("\"role\":\"model\""))
-        assertTrue(body["generationConfig"].toString().contains("application/json"))
-        val sample = """{"candidates":[{"content":{"role":"model","parts":[{"text":"{\"plans\":"},{"text":"[]}"}]}}],"usageMetadata":{"totalTokenCount":10}}"""
-        assertEquals("""{"plans":[]}""", geminiText(sample))
-        assertFailsWith<ServiceUnavailable> { geminiText("""{"promptFeedback":{"blockReason":"SAFETY"}}""") }
+    fun `json object is cut out of the reply`() {
+        assertEquals("""{"plans":[]}""", jsonObjectIn("""여기 있어요:\n```json\n{"plans":[]}\n```"""))
+        assertEquals("no json", jsonObjectIn("no json"))
     }
 }

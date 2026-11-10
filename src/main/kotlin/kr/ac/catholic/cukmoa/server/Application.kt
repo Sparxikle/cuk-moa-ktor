@@ -293,13 +293,15 @@ fun main(args: Array<String>) {
     val interval = env("SCRAPE_INTERVAL_MIN", "30").toInt().minutes
     val scrapeEnabled = env("SCRAPE_ENABLED", "true") != "false"
 
-    embeddedServer(Netty, port = port, host = "0.0.0.0") {
-        val gemini = env("GEMINI_API_KEY")?.takeIf { it.isNotBlank() }?.let { GeminiTimetableAi(it, env("GEMINI_MODEL", "gemini-3.5-flash-lite")) }
-        if (gemini == null) environment.log.info("GEMINI_API_KEY not set: AI timetable maker answers 503")
+    embeddedServer(Netty, port = port, host = env("HOST", "0.0.0.0")) {
+        // The AWS SDK reads the Bedrock API key only from the process environment or this system property, not from .env
+        if (System.getenv("AWS_BEARER_TOKEN_BEDROCK") == null) env("AWS_BEARER_TOKEN_BEDROCK")?.takeIf { it.isNotBlank() }?.let { System.setProperty("aws.bearerTokenBedrock", it) }
+        val bedrock = env("BEDROCK_MODEL_ID")?.takeIf { it.isNotBlank() }?.let { BedrockTimetableAi(it, env("AWS_REGION", "ap-northeast-2")) }
+        if (bedrock == null) environment.log.info("BEDROCK_MODEL_ID not set: AI timetable maker answers 503")
         val careerNetKey = env("CAREERNET_API_KEY")?.takeIf { it.isNotBlank() }
         if (careerNetKey == null) environment.log.info("CAREERNET_API_KEY not set: /api/v1/jobs returns job names only")
         val jobs = JobService(db, departments, careerNetKey).also { it.refreshInBackgroundIfStale() }
-        module(db, catalog, departments, TimetableService(db, catalog, gemini), jobs, sites)
+        module(db, catalog, departments, TimetableService(db, catalog, bedrock), jobs, sites)
         if (scrapeEnabled) launch {
             // New posts only every interval, and a full collection (every page, professors, roadmaps, calendar) once a day.
             // The last full collection is read from the database, so a restart doesn't start another one;

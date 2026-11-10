@@ -33,13 +33,15 @@ The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, ad
 | --- | --- | --- |
 | `PORT` | `8080` | |
 | `DATABASE_PATH` | `data/announcements.db` | Created if missing |
+| `HOST` | `0.0.0.0` | Bind address. `127.0.0.1` behind a reverse proxy on the same machine |
 | `SCRAPE_INTERVAL_MIN` | `30` | Interval for collecting new posts |
 | `SCRAPE_ENABLED` | `true` | `false` = API only |
 | `SITES_PATH` | `sites/department-sites.json` | Department site registry: boards, professor pages, roadmaps, graduation links. Restart after editing |
 | `CATALOG_PATH` | none | Real catalog JSON. Sample if unset. The server won't start if references are broken |
-| `GEMINI_API_KEY` | none | Google AI Studio key for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Free tier: Google may use prompts to improve its models (no names or student IDs are sent) |
+| `BEDROCK_MODEL_ID` | none | Amazon Bedrock model ID or inference profile ID for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Credentials: `AWS_BEARER_TOKEN_BEDROCK` if set, otherwise the AWS default provider chain (EC2 instance role; needs `bedrock:InvokeModel`) |
+| `AWS_BEARER_TOKEN_BEDROCK` | none | Bedrock API key |
 | `CAREERNET_API_KEY` | none | CareerNet (career.go.kr) Open API key for job descriptions in `GET /api/v1/jobs`. Without it, jobs come back as names only |
-| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model id |
+| `AWS_REGION` | `ap-northeast-2` | Bedrock region |
 | `DATA_GO_API_KEY` | none | Public Data Portal "University Department Information" API key. Without it, the department list comes from the snapshot in the app repo |
 
 Settings are read from environment variables first, then from `.env` in the server folder. Copy `.env.example` to `.env`. **`.env` is not tracked by git** (never commit the key).
@@ -69,7 +71,7 @@ Refreshing the department snapshot (saved in the app repo; commit it to update t
 | `GET /api/v1/departments` | All school departments (by college, excluding discontinued and admission-only units) |
 | `GET /api/v1/calendar?campus=성심` | School academic calendar (성심 · 성의 · 성신 campuses) |
 | `GET /api/v1/jobs?department=성심/경영학과` | A department's related jobs (대교협 names) with CareerNet descriptions, salary and link. The whole CareerNet encyclopedia is downloaded every 30 days and names are matched on the server |
-| `POST /api/v1/timetables` | AI timetable suggestions: 3 checked timetables (no clashes, credit range, free days). Limited to 12 AI calls/min, 450/day, 10 timetables/hour per IP to stay inside the free tier |
+| `POST /api/v1/timetables` | AI timetable suggestions: 3 checked timetables (no clashes, credit range, free days). Limited to 12 AI calls/min, 450/day, 10 timetables/hour per IP to keep Bedrock costs down |
 | `GET /api/v1/classes` | Open classes of the latest imported semester, one row per class number (`department`, `category`, `grade`, `q` = class or professor name, `year`, `semester`) |
 | `GET /api/v1/professors` | Professor profiles from department websites (`major`, e.g. `?major=ai,csie`; department chairs first, then by name) |
 | `GET /api/v1/roadmaps` | Official department major roadmaps (`major`) |

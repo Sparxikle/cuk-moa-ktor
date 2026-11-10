@@ -4,6 +4,7 @@ ktor = "3.6.0"
 jsoup = "1.23.2"
 sqlite-jdbc = "3.53.4.0"
 logback = "1.6.5"
+aws-sdk = "2.57.4"
 shared = "0.1.0"
 
 [libraries]
@@ -22,6 +23,7 @@ jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+aws-bedrockruntime = { module = "software.amazon.awssdk:bedrockruntime", version.ref = "aws-sdk" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
