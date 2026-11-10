@@ -109,7 +109,7 @@ fun loadDotEnv(path: String = ".env"): Map<String, String> {
         .associate { line -> line.substringBefore("=").trim() to line.substringAfter("=").trim().removeSurrounding("\"") }
 }
 
-class DepartmentService(private val apiKey: String?, private val registry: SiteRegistry = SiteRegistry(emptyList())) {
+open class DepartmentService(private val apiKey: String?, private val registry: SiteRegistry = SiteRegistry(emptyList())) {
     private val log = LoggerFactory.getLogger(DepartmentService::class.java)
     private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
 
@@ -125,7 +125,7 @@ class DepartmentService(private val apiKey: String?, private val registry: SiteR
 
     /** Calls the API only once a day. On failure, the last successful value; failing that, the snapshot. */
     fun current(): DepartmentList {
-        cached?.let { (at, list) -> if (Duration.between(at, Instant.now()) < Duration.ofHours(24)) return list }
+        cached?.let { (at, list) -> if (Duration.between(at, Instant.now()) < Duration.ofHours(24)) return withSites(list) }
         val fresh = runCatching { fetch() }
             .onFailure { log.warn("department API failed: {}", it.message) }
             .getOrNull()
@@ -152,7 +152,7 @@ class DepartmentService(private val apiKey: String?, private val registry: SiteR
         )
     }
 
-    fun fetch(): DepartmentList {
+    open fun fetch(): DepartmentList {
         val key = requireNotNull(apiKey?.takeIf { it.isNotBlank() }) { "DATA_GO_API_KEY가 없습니다" }
         val query = mapOf("serviceKey" to key, "pageNo" to "1", "numOfRows" to "1000", "type" to "json", "SCHL_NM" to SCHOOL_NAME)
             .entries.joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, Charsets.UTF_8)}" }

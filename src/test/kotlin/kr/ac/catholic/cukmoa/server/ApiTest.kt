@@ -100,6 +100,20 @@ class ApiTest {
     }
 
     @Test
+    fun `cached department list keeps board codes`() {
+        val registry = SiteRegistry.parse(File("sites/department-sites.json").readText())
+        val apiList = DepartmentService(apiKey = null).current() // stands in for the API response: no board codes
+        var calls = 0
+        val service = object : DepartmentService(apiKey = "key", registry = registry) {
+            override fun fetch() = apiList.also { calls++ }
+        }
+        fun csie() = service.current().items.first { it.name == "컴퓨터정보공학부" }.board
+        assertEquals("csie", csie())
+        assertEquals("csie", csie()) // second call is served from the cache
+        assertEquals(1, calls)
+    }
+
+    @Test
     fun `departments fall back to the bundled snapshot without an API key`() = withApi {
         val list = json().get("/api/v1/departments").body<kr.ac.catholic.cukmoa.model.DepartmentList>()
         assertTrue(list.items.size > 50)
