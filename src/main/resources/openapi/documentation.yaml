@@ -250,6 +250,25 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/TimetableRequest" }
+            example:
+              student:
+                onboarded: true
+                grade: 2
+                currentSemester: "2-1"
+                trackIds: []
+                homeCards: []
+                completedCourseIds: []
+                inProgressCourseIds: []
+                savedCourseIds: []
+                otherCredits: {}
+                exam: {}
+                departments: ["성심/컴퓨터정보공학부"]
+              prefs:
+                minCredits: 15
+                maxCredits: 18
+                highGpa: false
+                freeDays: ["금"]
+                time: any
       responses:
         "200":
           description: Suggested timetables
@@ -543,6 +562,19 @@ components:
         student:
           type: object
           description: The student's state as stored on the device (StudentState in shared/model/Student.kt). Used for this request only.
+          required: [onboarded, grade, currentSemester, trackIds, homeCards, completedCourseIds, inProgressCourseIds, savedCourseIds, otherCredits, exam]
+          properties:
+            onboarded: { type: boolean }
+            grade: { type: integer, minimum: 1, maximum: 4 }
+            currentSemester: { type: string, example: "2-1" }
+            departments: { type: array, description: 'Department IDs ("campus/name"), 1st major first', items: { type: string } }
+            trackIds: { type: array, items: { type: string } }
+            homeCards: { type: array, items: { type: string } }
+            completedCourseIds: { type: array, items: { type: string } }
+            inProgressCourseIds: { type: array, items: { type: string } }
+            savedCourseIds: { type: array, items: { type: string } }
+            otherCredits: { type: object, additionalProperties: { type: integer } }
+            exam: { type: object }
         prefs:
           type: object
           required: [minCredits, maxCredits, freeDays, time]
