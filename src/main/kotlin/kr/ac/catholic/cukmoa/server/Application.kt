@@ -1,5 +1,6 @@
 package kr.ac.catholic.cukmoa.server
 
+import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -58,6 +59,9 @@ private suspend fun ApplicationCall.error(status: HttpStatusCode, code: String, 
 
 private const val DEFAULT_LIMIT = 20
 private const val MAX_LIMIT = 100
+
+/** OpenAPI spec of the routes below, on the classpath (src/main/resources). */
+internal const val OPENAPI_SPEC = "openapi/documentation.yaml"
 
 /** HTTP config and routes. Tests call the same function inside testApplication. */
 fun Application.module(
@@ -150,7 +154,7 @@ fun Application.module(
             call.respond(
                 MajorRoadmapList(
                     source = DataSource(
-                        label = "AI전자정보융합대학 학과 홈페이지 전공로드맵",
+                        label = "학과 홈페이지 전공로드맵",
                         asOf = db.scrapeRuns().filter { it.boardKey.startsWith("roadmap/") }.mapNotNull { it.lastOk }.maxOrNull()?.take(10)
                             ?: java.time.LocalDate.now().toString(),
                         isSample = false,
@@ -165,7 +169,7 @@ fun Application.module(
             call.respond(
                 FacultyList(
                     source = DataSource(
-                        label = "AI전자정보융합대학 학과 홈페이지 교수 소개",
+                        label = "학과 홈페이지 교수 소개",
                         asOf = db.scrapeRuns().firstOrNull { it.boardKey == "faculty" }?.lastOk?.take(10) ?: java.time.LocalDate.now().toString(),
                         isSample = false,
                     ),
@@ -233,6 +237,10 @@ fun Application.module(
             val item = db.get(id) ?: return@get call.error(HttpStatusCode.NotFound, ErrorCodes.ANNOUNCEMENT_NOT_FOUND, "공지를 찾을 수 없습니다.")
             call.respond(item)
         }
+
+        // API docs: Swagger UI at /swagger, the spec at /swagger/documentation.yaml. OpenApiTest keeps the spec's paths
+        // and these routes in step.
+        swaggerUI(path = "swagger", swaggerFile = OPENAPI_SPEC)
 
         // Unknown paths answer with the same error format too
         route("{...}") {

@@ -1,0 +1,578 @@
+openapi: 3.0.3
+info:
+  title: 가대모아 API
+  version: "0.9"
+  description: |
+    Public school information for the 가대모아 app (Catholic University of Korea): announcements, departments,
+    professors, roadmaps, the academic calendar, this semester's classes, career information and the AI timetable maker.
+    No authentication. No student data is stored; the timetable request carries the student's state only for that request.
+    Responses are JSON (UTF-8), field names in camelCase, and fields without a value are left out.
+    Every path here must match a route in Application.kt (checked by OpenApiTest).
+servers:
+  - url: https://54-117-83-53.sslip.io
+    description: Production (AWS)
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: status
+  - name: announcements
+  - name: school
+  - name: classes
+  - name: timetable
+paths:
+  /health:
+    get:
+      tags: [status]
+      summary: Server status
+      responses:
+        "200":
+          description: Running
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+  /api/v1/catalog:
+    get:
+      tags: [school]
+      summary: Courses, career tracks, senior records and graduation rules
+      description: Senior records are sample data until the senior survey (`source.isSample`).
+      responses:
+        "200":
+          description: The catalog
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Catalog" }
+  /api/v1/courses/{id}:
+    get:
+      tags: [school]
+      summary: One course from the catalog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Letters, digits, `-` and `_`, up to 100 characters
+          schema: { type: string, pattern: "^[a-zA-Z0-9_-]{1,100}$" }
+          example: humanity-1
+      responses:
+        "200":
+          description: The course
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/announcements:
+    get:
+      tags: [announcements]
+      summary: Announcements (filter, search, pages)
+      parameters:
+        - name: source
+          in: query
+          description: Comma-separated. lms (e-cyber), main (school notices), event, outside (contests and outside events), dept (department boards)
+          schema: { type: string }
+          example: dept,main
+        - name: major
+          in: query
+          description: Comma-separated department board codes (see /api/v1/announcements/meta → majors). Applies to department posts only.
+          schema: { type: string }
+          example: csie,ai
+        - name: category
+          in: query
+          description: Comma-separated (notice, career, news, external, graduate, recruitment, event; school notices keep the site's own categories)
+          schema: { type: string }
+        - name: board
+          in: query
+          description: Comma-separated original board names of department sites
+          schema: { type: string }
+        - name: q
+          in: query
+          description: Title search; every space-separated word must appear
+          schema: { type: string }
+        - name: since
+          in: query
+          description: Only posts first collected after this time (YYYY-MM-DD or ISO 8601)
+          schema: { type: string }
+        - name: pinnedFirst
+          in: query
+          schema: { type: boolean, default: true }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        "200":
+          description: One page of announcements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnouncementPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/announcements/meta:
+    get:
+      tags: [announcements, status]
+      summary: Sources, board counts and collection status
+      responses:
+        "200":
+          description: Collection status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnouncementMeta" }
+  /api/v1/announcements/{id}:
+    get:
+      tags: [announcements]
+      summary: One announcement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: The announcement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Announcement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/departments:
+    get:
+      tags: [school]
+      summary: Every department with its main subjects and careers
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DepartmentList" }
+  /api/v1/roadmaps:
+    get:
+      tags: [school]
+      summary: Departments' official major roadmaps
+      parameters:
+        - name: major
+          in: query
+          description: Comma-separated board codes; all when left out
+          schema: { type: string }
+      responses:
+        "200":
+          description: Roadmaps
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MajorRoadmapList" }
+  /api/v1/professors:
+    get:
+      tags: [school]
+      summary: Professors from the department sites
+      parameters:
+        - name: major
+          in: query
+          description: Comma-separated board codes; all when left out
+          schema: { type: string }
+      responses:
+        "200":
+          description: Professors
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacultyList" }
+  /api/v1/calendar:
+    get:
+      tags: [school]
+      summary: Academic calendar
+      parameters:
+        - name: campus
+          in: query
+          schema: { type: string, enum: [성심, 성의, 성신], default: 성심 }
+      responses:
+        "200":
+          description: Calendar events
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CalendarResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/classes:
+    get:
+      tags: [classes]
+      summary: Open classes of a semester (latest imported by default)
+      parameters:
+        - name: year
+          in: query
+          schema: { type: integer }
+        - name: semester
+          in: query
+          schema: { type: string }
+        - name: department
+          in: query
+          description: Comma-separated department names
+          schema: { type: string }
+        - name: category
+          in: query
+          description: Comma-separated class categories
+          schema: { type: string }
+        - name: grade
+          in: query
+          schema: { type: integer }
+        - name: q
+          in: query
+          description: Class name search
+          schema: { type: string }
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OpenClassList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/jobs:
+    get:
+      tags: [school]
+      summary: CareerNet descriptions of a department's related careers
+      parameters:
+        - name: department
+          in: query
+          required: true
+          description: Department ID ("campus/name")
+          schema: { type: string }
+          example: 성심/컴퓨터정보공학부
+      responses:
+        "200":
+          description: Jobs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JobList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/v1/timetables:
+    post:
+      tags: [timetable]
+      summary: AI timetable maker
+      description: Returns up to three checked timetables (no clashes, credits in range) with a reason for every class.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TimetableRequest" }
+      responses:
+        "200":
+          description: Suggested timetables
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimetableResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429":
+          description: Too many requests (RATE_LIMITED)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: AI not configured, or no open classes imported (AI_UNAVAILABLE)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  responses:
+    BadRequest:
+      description: INVALID_REQUEST
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: NOT_FOUND, COURSE_NOT_FOUND or ANNOUNCEMENT_NOT_FOUND
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [INVALID_REQUEST, NOT_FOUND, COURSE_NOT_FOUND, ANNOUNCEMENT_NOT_FOUND, INTERNAL_ERROR, AI_UNAVAILABLE, RATE_LIMITED]
+            message: { type: string }
+    DataSource:
+      type: object
+      required: [label, asOf, isSample]
+      properties:
+        label: { type: string }
+        asOf: { type: string, description: YYYY-MM-DD }
+        isSample: { type: boolean }
+        url: { type: string }
+    Health:
+      type: object
+      required: [status, service, dataMode, announcements]
+      properties:
+        status: { type: string, example: ok }
+        service: { type: string, example: cuk-moa-api }
+        dataMode: { type: string, enum: [sample, live], description: Kind of catalog }
+        announcements:
+          type: object
+          properties:
+            lastScrape: { type: string, description: Last successful collection (UTC) }
+    Catalog:
+      type: object
+      description: Large; see shared/src/commonMain/kotlin/kr/ac/catholic/cukmoa/model/Catalog.kt
+      required: [tracks, courses, roadmaps, stories, graduation, source]
+      properties:
+        tracks: { type: array, items: { type: object } }
+        courses: { type: array, items: { $ref: "#/components/schemas/Course" } }
+        roadmaps: { type: array, items: { type: object } }
+        stories: { type: array, items: { type: object } }
+        graduation: { type: object }
+        source: { $ref: "#/components/schemas/DataSource" }
+    Course:
+      type: object
+      required: [id, name, category, credits, summary]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string, enum: [major, general] }
+        credits: { type: integer }
+        summary: { type: string }
+        isExamSubject: { type: boolean }
+        recommendedSemester: { type: string, example: "3-1" }
+        prerequisiteIds: { type: array, items: { type: string } }
+    Announcement:
+      type: object
+      required: [id, source, board, title, date, link, pinned, firstSeen, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        source: { type: string, enum: [lms, main, event, outside, dept] }
+        board: { type: string }
+        major: { type: string }
+        category: { type: string }
+        title: { type: string }
+        date: { type: string, description: YYYY-MM-DD }
+        author: { type: string }
+        views: { type: integer, format: int64 }
+        link: { type: string, description: The original post }
+        image: { type: string }
+        pinned: { type: boolean }
+        firstSeen: { type: string, description: When the server first collected it (UTC) }
+        updatedAt: { type: string }
+    AnnouncementPage:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Announcement" } }
+        total: { type: integer, format: int64 }
+        limit: { type: integer }
+        offset: { type: integer }
+    AnnouncementMeta:
+      type: object
+      required: [sources, majors, boards, scrapeRuns]
+      properties:
+        sources: { type: array, items: { type: string } }
+        majors:
+          type: object
+          description: Board code → department name
+          additionalProperties: { type: string }
+        boards:
+          type: array
+          items:
+            type: object
+            properties:
+              source: { type: string }
+              major: { type: string }
+              board: { type: string }
+              category: { type: string }
+              count: { type: integer, format: int64 }
+        lastScrape: { type: string }
+        scrapeRuns:
+          type: array
+          description: Last success and error of every collector (boards, calendar/{year}, faculty, roadmap/{major} …)
+          items:
+            type: object
+            properties:
+              boardKey: { type: string }
+              lastOk: { type: string }
+              lastError: { type: string }
+              itemCount: { type: integer, format: int64 }
+    DepartmentList:
+      type: object
+      required: [source, items]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, name, college, campus]
+            properties:
+              id: { type: string, description: '"campus/name"' }
+              name: { type: string }
+              college: { type: string }
+              campus: { type: string, enum: [성심, 성의, 성신] }
+              board: { type: string, description: Board code when its announcements are collected }
+              site: { type: string }
+              graduationUrl: { type: string }
+              subjects: { type: array, items: { type: string } }
+              careers: { type: array, items: { type: string } }
+              quota: { type: integer }
+              graduates: { type: integer }
+    FacultyList:
+      type: object
+      required: [source, items]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, name, position, majors, departments, profileUrl]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              nameEn: { type: string }
+              position: { type: string }
+              role: { type: string }
+              majors: { type: array, items: { type: string } }
+              departments: { type: array, items: { type: string } }
+              office: { type: string }
+              field: { type: string }
+              keywords: { type: array, items: { type: string } }
+              intro: { type: string }
+              profileUrl: { type: string }
+    MajorRoadmapList:
+      type: object
+      required: [source, items]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        items:
+          type: array
+          items:
+            type: object
+            required: [major, department, url, entries]
+            properties:
+              major: { type: string }
+              department: { type: string }
+              url: { type: string }
+              imageUrl: { type: string }
+              legend: { type: object, additionalProperties: { type: string } }
+              note: { type: string }
+              entries:
+                type: array
+                items:
+                  type: object
+                  required: [track, name]
+                  properties:
+                    track: { type: string }
+                    semester: { type: string, example: "3-1" }
+                    year: { type: integer }
+                    name: { type: string }
+                    marks: { type: array, items: { type: string } }
+    CalendarResponse:
+      type: object
+      required: [source, campus, events]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        campus: { type: string }
+        events:
+          type: array
+          items:
+            type: object
+            required: [id, title, start, kind]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              start: { type: string }
+              end: { type: string }
+              kind: { type: string, enum: [exam, registration, deadline, holiday, event] }
+    OpenClassList:
+      type: object
+      required: [source, year, semester, items]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        year: { type: integer }
+        semester: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [year, semester, subjectNo, classNo, name, department, category]
+            properties:
+              year: { type: integer }
+              semester: { type: string }
+              subjectNo: { type: string }
+              classNo: { type: string }
+              name: { type: string }
+              department: { type: string }
+              category: { type: string }
+              grade: { type: integer }
+              foreignLanguage: { type: string }
+              professors: { type: array, items: { type: string } }
+              competency: { type: string }
+              enrolled: { type: integer }
+              hours: { type: integer }
+              credits: { type: integer }
+              times:
+                type: array
+                items:
+                  type: object
+                  required: [day, start, end]
+                  properties:
+                    day: { type: string, example: 월 }
+                    start: { type: integer, description: First period }
+                    end: { type: integer, description: Last period }
+                    room: { type: string }
+    JobList:
+      type: object
+      required: [source, department, items]
+      properties:
+        source: { $ref: "#/components/schemas/DataSource" }
+        department: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string }
+              summary: { type: string }
+              wage: { type: string }
+              aptitude: { type: string }
+              related: { type: string }
+              url: { type: string }
+              matched: { type: string, description: The CareerNet job the description comes from }
+    TimetableRequest:
+      type: object
+      required: [student, prefs]
+      properties:
+        student:
+          type: object
+          description: The student's state as stored on the device (StudentState in shared/model/Student.kt). Used for this request only.
+        prefs:
+          type: object
+          required: [minCredits, maxCredits, freeDays, time]
+          properties:
+            minCredits: { type: integer }
+            maxCredits: { type: integer }
+            highGpa: { type: boolean, description: Last semester's grades allow up to 21 credits }
+            freeDays: { type: array, items: { type: string, example: 금 } }
+            time: { type: string, enum: [morning, afternoon, any] }
+            note: { type: string, description: Free-text wish }
+    TimetableResponse:
+      type: object
+      required: [year, semester, plans]
+      properties:
+        year: { type: integer }
+        semester: { type: string }
+        plans:
+          type: array
+          items:
+            type: object
+            required: [title, summary, items]
+            properties:
+              title: { type: string }
+              summary: { type: string }
+              items:
+                type: array
+                items:
+                  type: object
+                  required: [subjectNo, classNo]
+                  properties:
+                    subjectNo: { type: string }
+                    classNo: { type: string }
+                    reason: { type: string }

@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.ktor.server.compression)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.swagger)
     implementation(libs.jsoup)
     compileOnly(libs.jspecify) // jsoup's null annotations
     implementation(libs.sqlite.jdbc)
