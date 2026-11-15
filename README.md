@@ -38,8 +38,7 @@ The server looks for `cuk-moa-kmp` in the sibling folder. If it is elsewhere, ad
 | `SCRAPE_ENABLED` | `true` | `false` = API only |
 | `SITES_PATH` | `sites/department-sites.json` | Department site registry: boards, professor pages, roadmaps, graduation links. Restart after editing |
 | `CATALOG_PATH` | none | Real catalog JSON. Sample if unset. The server won't start if references are broken |
-| `BEDROCK_MODEL_ID` | none | Amazon Bedrock model ID or inference profile ID for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Credentials: `AWS_BEARER_TOKEN_BEDROCK` if set, otherwise the AWS default provider chain (EC2 instance role; needs `bedrock:InvokeModel`) |
-| `AWS_BEARER_TOKEN_BEDROCK` | none | Bedrock API key |
+| `BEDROCK_MODEL_ID` | none | Amazon Bedrock model ID or inference profile ID for the AI timetable maker. Without it, `POST /api/v1/timetables` answers 503. Credentials come from the AWS default provider chain only: the EC2 instance role in production (needs `bedrock:InvokeModel`), `~/.aws` or `AWS_*` variables locally. No key is stored on the server |
 | `CAREERNET_API_KEY` | none | CareerNet (career.go.kr) Open API key for job descriptions in `GET /api/v1/jobs`. Without it, jobs come back as names only |
 | `AWS_REGION` | `ap-northeast-2` | Bedrock region |
 | `DATA_GO_API_KEY` | none | Public Data Portal "University Department Information" API key. Without it, the department list comes from the snapshot in the app repo |
@@ -59,6 +58,8 @@ Refreshing the department snapshot (saved in the app repo; commit it to update t
 ```
 
 ## API
+
+Full spec with request and response schemas: **Swagger UI at [`/swagger`](https://54-117-83-53.sslip.io/swagger)** (raw spec at `/swagger/documentation.yaml`, source in `src/main/resources/openapi/documentation.yaml`). `OpenApiTest` fails when a route and the spec disagree.
 
 | Path | |
 | --- | --- |
@@ -101,16 +102,47 @@ Adding a board: one line (department + board) in `DEPT_BOARDS` in `scrape/Scrape
 ./gradlew test
 ```
 
-## Deployment (AWS EC2 + Docker)
+## Deployment (AWS EC2, systemd + Caddy)
 
-SQLite needs a persistent disk, so use EC2 (or a Lightsail instance). Since it's a JVM server, `t3.small` (2 GB) or larger is recommended.
+Production runs on one EC2 instance: **t4g.medium** (ARM, 4 GB) with **Amazon Linux 2023**. The server is a systemd service and **Caddy** in front of it handles HTTPS (Let's Encrypt, renewed automatically). SQLite lives on the instance's disk, in `/opt/cuk-moa/data`. The files used in production are in [`deploy/`](deploy/).
+
+**Set up a new server (once)**
 
 ```sh
-./gradlew fatJar
-docker build -t cuk-moa-ktor .
-docker run -d --name cuk-moa --restart unless-stopped --env-file .env \
-  -p 80:8080 -v /srv/cuk-moa:/data cuk-moa-ktor
-curl http://<server address>/health
+sudo dnf install -y java-21-amazon-corretto-headless
+# Caddy: see https://caddyserver.com/docs/install
+sudo useradd --system --home-dir /opt/cuk-moa --shell /sbin/nologin cukmoa
+sudo mkdir -p /opt/cuk-moa/data /opt/cuk-moa/sites
+# Copy server.jar, sites/department-sites.json and .env (from .env.example) into /opt/cuk-moa
+sudo chown -R cukmoa:cukmoa /opt/cuk-moa && sudo chmod 600 /opt/cuk-moa/.env
+sudo cp deploy/cuk-moa.service /etc/systemd/system/
+sudo cp deploy/Caddyfile /etc/caddy/Caddyfile   # change the site name to this server's domain or sslip.io name
+sudo systemctl daemon-reload && sudo systemctl enable --now cuk-moa caddy
 ```
 
-Put HTTPS in front of the server (Caddy/nginx + Let's Encrypt, or ALB + ACM) before shipping the app.
+- The service runs as `cukmoa`, listens on `127.0.0.1:8080` only (Caddy is the only way in), and can write only to `/opt/cuk-moa/data`. It restarts on failure.
+- **Bedrock:** attach an IAM instance role that allows `bedrock:InvokeModel` (production: `cukmoa-server-role`) and set `BEDROCK_MODEL_ID` in `.env`. No AWS key goes on the server.
+- Open ports 80 and 443 in the security group (Caddy needs 80 for the certificate check).
+
+**Update the server**
+
+```sh
+./gradlew fatJar                                   # build/libs/server-all.jar
+scp build/libs/server-all.jar <server>:/tmp/server-new.jar
+ssh <server>
+sudo cp -p /opt/cuk-moa/server.jar /opt/cuk-moa/server.jar.bak-$(date +%Y%m%d)
+sudo install -o cukmoa -g cukmoa -m 755 /tmp/server-new.jar /opt/cuk-moa/server.jar
+sudo systemctl restart cuk-moa
+curl -s http://127.0.0.1:8080/health
+```
+
+To roll back, copy the `.bak` jar back and restart. If `sites/department-sites.json` changed, copy it to `/opt/cuk-moa/sites/` too.
+
+**Import the semester's open classes on the server**
+
+```sh
+cd /opt/cuk-moa && sudo -u cukmoa java -jar server.jar --import-classes /tmp/classes.json
+sudo systemctl restart cuk-moa
+```
+
+Logs: `journalctl -u cuk-moa -f`.

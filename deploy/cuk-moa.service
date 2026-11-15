@@ -1,0 +1,24 @@
+[Unit]
+Description=cuk-moa API server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cukmoa
+Group=cukmoa
+WorkingDirectory=/opt/cuk-moa
+# .env in WorkingDirectory is read by the app; PORT here overrides it
+Environment=PORT=8080
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/java -Xmx1g -jar /opt/cuk-moa/server.jar
+Restart=on-failure
+RestartSec=5
+CapabilityBoundingSet=
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/cuk-moa/data
+
+[Install]
+WantedBy=multi-user.target

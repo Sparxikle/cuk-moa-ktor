@@ -41,7 +41,7 @@ dependencies {
 
 tasks.test { useJUnitPlatform() }
 
-// Single jar for server deployment (used by the Dockerfile)
+// Single jar for server deployment (see Deployment in the README: systemd + Caddy)
 tasks.register<Jar>("fatJar") {
     group = "build"
     archiveFileName = "server-all.jar"

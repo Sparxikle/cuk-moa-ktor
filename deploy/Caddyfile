@@ -1,0 +1,5 @@
+# Caddy in front of the API server: HTTPS (Let's Encrypt, automatic) and reverse proxy to the server on localhost.
+# The site name is this server's sslip.io name (its public IP); replace it with your own domain or IP on another server.
+54-117-83-53.sslip.io {
+    reverse_proxy 127.0.0.1:8080
+}

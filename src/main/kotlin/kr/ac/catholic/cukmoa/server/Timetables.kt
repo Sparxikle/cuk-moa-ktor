@@ -325,8 +325,8 @@ class TimetableService(
 }
 
 /**
- * Amazon Bedrock (Converse API). Auth: a Bedrock API key in AWS_BEARER_TOKEN_BEDROCK if set,
- * otherwise the SDK's default provider chain (EC2 instance role). Converse has no response schema, so the shape is
+ * Amazon Bedrock (Converse API). Auth: the SDK's default provider chain only, so no key is stored on the server: the
+ * EC2 instance role in production, ~/.aws or AWS_* variables locally. Converse has no response schema, so the shape is
  * spelled out in the system prompt and the JSON object is cut out of the reply.
  */
 class BedrockTimetableAi(
