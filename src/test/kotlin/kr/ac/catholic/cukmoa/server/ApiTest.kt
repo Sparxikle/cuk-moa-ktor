@@ -3,8 +3,15 @@ package kr.ac.catholic.cukmoa.server
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.options
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
@@ -194,5 +201,24 @@ class ApiTest {
         assertEquals(before.firstSeen, after.firstSeen)
         assertEquals("AI 해커톤 공모전 참가자 모집 (마감 연장)", after.title) // The FTS triggers update too
         assertEquals(4, db.list(kr.ac.catholic.cukmoa.model.AnnouncementQuery()).second)
+    }
+
+    @Test
+    fun `browsers may post a timetable request (Swagger UI behind the proxy)`() = withApi {
+        val origin = "https://54-117-83-53.sslip.io"
+        val preflight = client.options("/api/v1/timetables") {
+            header(HttpHeaders.Origin, origin)
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+            header(HttpHeaders.AccessControlRequestHeaders, "content-type")
+        }
+        assertEquals(HttpStatusCode.OK, preflight.status)
+        // Reaches the route (an empty body is a bad request) instead of a bare CORS 403
+        val res = client.post("/api/v1/timetables") {
+            header(HttpHeaders.Origin, origin)
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+        }
+        assertEquals(HttpStatusCode.BadRequest, res.status)
+        assertTrue(res.headers[HttpHeaders.AccessControlAllowOrigin] != null)
     }
 }

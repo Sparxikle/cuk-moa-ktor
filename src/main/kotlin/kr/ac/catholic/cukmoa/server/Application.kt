@@ -1,6 +1,7 @@
 package kr.ac.catholic.cukmoa.server
 
 import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -75,10 +76,14 @@ fun Application.module(
     install(ContentNegotiation) { json(ApiJson) }
     install(Compression)
     install(CallLogging)
-    // The (native) app has no CORS restrictions. Only GET is opened, for viewing from the web.
+    // The (native) app has no CORS restrictions. Browsers need it for the web and for Swagger UI's "Try it out":
+    // behind Caddy the server sees http://127.0.0.1, so even /swagger's own POST counts as cross-origin.
+    // POST is only the timetable maker, whose cost is capped per IP (TimetableLimiter), not by CORS.
     install(CORS) {
         anyHost()
         allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowHeader(HttpHeaders.ContentType)
     }
     install(StatusPages) {
         exception<BadRequest> { call, e -> call.error(HttpStatusCode.BadRequest, ErrorCodes.INVALID_REQUEST, e.message ?: "요청 형식을 확인해주세요.") }
