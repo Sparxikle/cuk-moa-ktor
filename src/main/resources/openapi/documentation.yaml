@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: 가대모아 API
-  version: "0.9"
+  version: "1.0"
   description: |
     Public school information for the 가대모아 app (Catholic University of Korea): announcements, departments,
     professors, roadmaps, the academic calendar, this semester's classes, career information and the AI timetable maker.

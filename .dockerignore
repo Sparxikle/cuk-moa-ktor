@@ -1,7 +1,0 @@
-build/classes
-build/tmp
-build/kotlin
-build/install
-data
-src
-.env
